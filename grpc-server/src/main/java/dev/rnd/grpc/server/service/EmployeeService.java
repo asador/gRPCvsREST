@@ -1,5 +1,7 @@
 package dev.rnd.grpc.server.service;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -28,9 +30,9 @@ public class EmployeeService {
 		return empId;
 	}
 	
-//	public Collection<EmployeeDTO> getLocations() {
-//		return Collections.unmodifiableCollection(employeeRepo.values());
-//	}
+	public Collection<EmployeeDTO> getEmployees() {
+		return Collections.unmodifiableCollection(employeeRepo.values());
+	}
 	
 	public void loadDataSet(String sampleDateFileName) {
 		EmployeeUtil.loadDataSet(sampleDateFileName, employeeRepo);

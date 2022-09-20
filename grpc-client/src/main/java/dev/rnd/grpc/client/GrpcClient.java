@@ -1,12 +1,17 @@
 package dev.rnd.grpc.client;
 
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import io.grpc.Grpc;
@@ -23,6 +28,11 @@ public class GrpcClient {
   private EmployeeGrpcClient employeeClient;
   
   private Map<Integer, EmployeeDTO> sampleData = new HashMap<>();
+  private List<EmployeeDTO> sampleDataAsList = new ArrayList<>();
+  private List<Integer> employeeIDs;
+  private ExecutorService executor;
+  
+  private Random rnd = new Random(System.currentTimeMillis());
 
   GrpcClient() {
   	props = ApplicationProperties.getAppProperties();
@@ -31,9 +41,12 @@ public class GrpcClient {
   		Logger.getLogger(GrpcClient.class.getPackageName()).setLevel(Level.OFF);
   	
   	EmployeeUtil.loadDataSet(SAMPLE_DATA_SET, sampleData);
+  	sampleDataAsList.addAll(sampleData.values());
   	
   	channel = Grpc.newChannelBuilder(props.getServerAddress(), InsecureChannelCredentials.create()).build();
   	employeeClient = new EmployeeGrpcClient(channel);
+  	
+  	executor = Executors.newFixedThreadPool(props.getThreadCount());
   }
 
 	public static void main(String[] args) throws Exception{
@@ -48,10 +61,19 @@ public class GrpcClient {
 	}
 
 	private void runTests() {
+		warmUp();
 		
-		testGetEmployeeByID();
+		if (props.isTestGetEmployeeON()) {			
+			testGrpcMethod("getEmployee", () -> {
+				testGetEmployeeByID();
+			});
+		}
 		
-		testCreateEmployee();
+		if (props.isTestCreateEmployeeON()) {
+			testGrpcMethod("createEmployee", () -> {
+				testCreateEmployee();
+			});
+		}
 		
 //		EmployeeGrpcClient employeeClient = new EmployeeGrpcClient(channel);
 //		try {
@@ -109,20 +131,51 @@ public class GrpcClient {
 //		}
 	}
 	
+	private void testGrpcMethod(String testMethodName, Runnable r) {
+		for (int i=0; i< props.getThreadCount(); i++) {
+			executor.execute(() -> {
+				long start = System.currentTimeMillis();
+				for (int j=0; j<props.getIterationCount(); j++) {
+					r.run();
+				}
+				long duration = System.currentTimeMillis() - start;
+				
+				logger.log(Level.INFO, "{0} {1}ms, thread: {2}", new Object[] {testMethodName, duration, Thread.currentThread().getId()});
+			});
+		}
+		
+	}
+	
 	private void testGetEmployeeByID() {
-		Employee employee = employeeClient.getEmployee(804206);
-		logger.info(employee.toString());
+		int idx = rnd.nextInt(employeeIDs.size());
+		employeeClient.getEmployee(employeeIDs.get(idx));
+//		logger.info(employee.toString());
 	}
 	
 	private void testCreateEmployee() {
-		EmployeeDTO emp = sampleData.values().iterator().next();
+		int idx = rnd.nextInt(sampleDataAsList.size());
+		EmployeeDTO emp = sampleDataAsList.get(idx);
 		
-		int empId = employeeClient.createEmployee(emp);
-		logger.info("create employee wiht ID: "+ empId);
+		employeeClient.createEmployee(emp);
+//		logger.info("create employee wiht ID: "+ empId);
+	}
+	
+	private void warmUp() {
+//		int count = employeeClient.getEmployeeCount();
+		employeeIDs = employeeClient.getEmployeeIDs();
+		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
+	}
+	
+	private void saveResults() {
+		
 	}
 	
 	private void shutdown() throws InterruptedException {
+		executor.shutdown();
+		executor.awaitTermination(30, TimeUnit.SECONDS);
 		channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+		
+		saveResults();
 	}	
 
 }

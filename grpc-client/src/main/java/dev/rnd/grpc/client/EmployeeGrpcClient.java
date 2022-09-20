@@ -1,7 +1,12 @@
 package dev.rnd.grpc.client;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.google.protobuf.Empty;
 
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc;
@@ -35,6 +40,10 @@ public class EmployeeGrpcClient {
   public Employee getEmployee(int empId) {
   	return blockingStub.getEmployee(EmployeeID.newBuilder().setEmpId(empId).build());
   }
+  
+  public int getEmployeeCount() {
+  	return blockingStub.getEmployeesCount(Empty.newBuilder().build()).getCount();
+  }
 
   public int createEmployee(EmployeeDTO dto) {
   	EmployeeID employeeID = blockingStub.createEmployee(EmployeeUtil.dto2EmployeeProto(dto));
@@ -42,6 +51,14 @@ public class EmployeeGrpcClient {
   	return employeeID.getEmpId();
   }
   
+	public List<Integer> getEmployeeIDs() {
+		List<Integer> empIDs = new ArrayList<>();
+		Iterator<EmployeeID> iterator = blockingStub.getEmployeeIDs(Empty.newBuilder().build());
+		while (iterator.hasNext()) {
+			empIDs.add(iterator.next().getEmpId());
+		}
+		return empIDs;
+	}
   
 //  public List<Location> getLocations() {
 //  	List<Location> locations = new ArrayList<Location>();

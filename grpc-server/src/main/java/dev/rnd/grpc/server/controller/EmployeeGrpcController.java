@@ -1,5 +1,6 @@
 package dev.rnd.grpc.server.controller;
 
+import java.util.Collection;
 import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
@@ -42,7 +43,7 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 			metadata.put(errorKey, errInfo);
 			
 			responseObserver.onError(Status.NOT_FOUND
-					.withDescription("Could not find location with id: "+request.getEmpId())
+					.withDescription("Could not find employee with id: "+request.getEmpId())
 					.asRuntimeException(metadata));
 			return;
 
@@ -76,6 +77,18 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
   	logger.info("called createEmployee: " + employeeId);
   }
 
+	@Override
+	public void getEmployeeIDs(Empty request, StreamObserver<EmployeeID> responseObserver) {
+		Collection<EmployeeDTO> emps = employeeService.getEmployees();
+
+		for (EmployeeDTO dto : emps) {
+			responseObserver.onNext(EmployeeID.newBuilder().setEmpId(dto.getEmpId()).build());
+		}
+
+		responseObserver.onCompleted();
+		logger.info("called getEmployeeIDs: " + emps.size() + " emp IDs returned");
+	}	
+	
 //	@Override
 //	public void listLocations(Empty request, StreamObserver<Location> responseObserver) {
 //		Collection<EmployeeDTO> locations = employeeService.getLocations();

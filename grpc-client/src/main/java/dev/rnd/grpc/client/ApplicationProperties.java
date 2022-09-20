@@ -8,6 +8,8 @@ public class ApplicationProperties {
 	private static final String SERVER_ADDRESS = "grpc.server.address";
 	private static final String JAVA_LOGGING = "java.logging";
   
+	private static final String THREAD_COUNT = "test.numberOfThreads";
+	private static final String ITERATION_COUNT = "test.iterationCount";
   private static final String GET_EMPLOYEE_TEST = "test.getEmployee";
   private static final String CREATE_EMPLOYEE_TEST = "test.createEmployee";
 	
@@ -15,6 +17,9 @@ public class ApplicationProperties {
   
 	private String serverAddress;
   private String javaLogging;
+  
+  private int threadCount;
+  private int iterationCount;
   private boolean testGetEmployeeON;
   private boolean testCreateEmployeeON;
   
@@ -39,6 +44,8 @@ public class ApplicationProperties {
 			serverAddress = config.getProperty(SERVER_ADDRESS);
 			javaLogging = config.getProperty(JAVA_LOGGING);
 			
+			threadCount = Integer.valueOf(config.getProperty(THREAD_COUNT));
+			iterationCount = Integer.valueOf(config.getProperty(ITERATION_COUNT));
 			testGetEmployeeON = Boolean.valueOf(config.getProperty(GET_EMPLOYEE_TEST));
 			testCreateEmployeeON = Boolean.valueOf(config.getProperty(CREATE_EMPLOYEE_TEST));
 		}
@@ -61,6 +68,14 @@ public class ApplicationProperties {
 
 	public boolean isTestCreateEmployeeON() {
 		return testCreateEmployeeON;
+	}
+
+	public int getThreadCount() {
+		return threadCount;
+	}
+
+	public int getIterationCount() {
+		return iterationCount;
 	}
 
 }

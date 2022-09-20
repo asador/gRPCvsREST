@@ -13,6 +13,8 @@ service EmployeeGrpcService {
 
   rpc GetEmployee(EmployeeID) returns (Employee) {}
   rpc GetEmployeesCount(google.protobuf.Empty) returns (Count) {}
+  rpc GetEmployeeIDs(google.protobuf.Empty) returns (stream EmployeeID) {}
+  
   rpc CreateEmployee(Employee) returns (EmployeeID) {}
   
   // server side streaming
