@@ -9,9 +9,10 @@ package employee;
 import "google/protobuf/empty.proto";
 import "google/rpc/status.proto";
 
-service EmployeeController {
+service EmployeeGrpcService {
 
   rpc GetEmployee(EmployeeID) returns (Employee) {}
+  rpc GetEmployeesCount(google.protobuf.Empty) returns (Count) {}
   rpc CreateEmployee(Employee) returns (EmployeeID) {}
   
   // server side streaming

@@ -17,6 +17,7 @@ import io.grpc.protobuf.services.ProtoReflectionService;
 public class GrpcServer 
 {
   private static final Logger logger = Logger.getLogger(GrpcServer.class.getName());
+  private static final String SAMPLE_DATA_SET = "sampleEmployeeData.csv";
   
   private final Server server;
   private Properties config;
@@ -31,7 +32,7 @@ public class GrpcServer
   		Logger.getLogger(GrpcServer.class.getPackageName()).setLevel(Level.OFF);
 
   	EmployeeService empService = new EmployeeService();
-  	empService.loadDataSet("sampleEmployeeData.csv");
+  	empService.loadDataSet(SAMPLE_DATA_SET);
   	
     BindableService employeeGrpcService = new EmployeeGrpcController(empService);
 

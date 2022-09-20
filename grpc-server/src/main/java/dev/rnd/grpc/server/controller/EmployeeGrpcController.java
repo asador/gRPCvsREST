@@ -1,14 +1,13 @@
 package dev.rnd.grpc.server.controller;
 
-import java.time.LocalDate;
 import java.util.logging.Logger;
 
+import com.google.protobuf.Empty;
 import com.google.rpc.ErrorInfo;
 
-import dev.rnd.grpc.employee.Address;
-import dev.rnd.grpc.employee.Date;
+import dev.rnd.grpc.employee.Count;
 import dev.rnd.grpc.employee.Employee;
-import dev.rnd.grpc.employee.EmployeeControllerGrpc.EmployeeControllerImplBase;
+import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc.EmployeeGrpcServiceImplBase;
 import dev.rnd.grpc.employee.EmployeeID;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import dev.rnd.grpc.server.service.EmployeeService;
@@ -17,7 +16,7 @@ import io.grpc.Status;
 import io.grpc.protobuf.ProtoUtils;
 import io.grpc.stub.StreamObserver;
 
-public class EmployeeGrpcController extends EmployeeControllerImplBase {
+public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 
   private static final Logger logger = Logger.getLogger(EmployeeGrpcController.class.getName());
   
@@ -49,15 +48,23 @@ public class EmployeeGrpcController extends EmployeeControllerImplBase {
 
 		}
 		
-		Employee emp = dto2EmployeeProto(dto);
+		Employee emp = EmployeeUtil.dto2EmployeeProto(dto);
 		
 		responseObserver.onNext(emp);
 		responseObserver.onCompleted();
   }
 
   @Override
+	public void getEmployeesCount(Empty request, StreamObserver<Count> responseObserver) {
+		Count count = Count.newBuilder().setCount(employeeService.getEmployeesCount()).build();
+		
+		responseObserver.onNext(count);
+		responseObserver.onCompleted();
+	}
+
+	@Override
   public void createEmployee(Employee request, StreamObserver<EmployeeID> responseObserver) {
-  	EmployeeDTO dto = employeeProto2DTO(request);
+  	EmployeeDTO dto = EmployeeUtil.employeeProto2DTO(request);
   	
   	int employeeId = employeeService.createEmployee(dto);
   	
@@ -175,45 +182,4 @@ public class EmployeeGrpcController extends EmployeeControllerImplBase {
 		return (value == null) ? "" : value;
 	}
 	
-	private Employee dto2EmployeeProto(EmployeeDTO dto) {
-		return Employee.newBuilder()
-						.setAddress(Address.newBuilder()
-								.setStreetAddress(dto.getAddress())
-								.setCity(dto.getCity())
-								.setState(dto.getState())
-								.setZipCode(dto.getZipCode()))
-						.setDepartmentId(dto.getDepartmentId())
-						.setEmail(dto.getEmail())
-						.setEmpId(dto.getEmpId())
-						.setEmploymentStartDate(Date.newBuilder()
-								.setDay(dto.getStartDate().getDayOfMonth())
-								.setMonth(dto.getStartDate().getMonthValue())
-								.setYear(dto.getStartDate().getYear()))
-						.setFirstName(dto.getFirstName())
-						.setLastName(dto.getLastName())
-						.setManagerId(dto.getManagerId())
-						.setPhone(dto.getPhone())
-						.setTitle(dto.getTitle())
-						.build();		
-	}
-  
-	private EmployeeDTO employeeProto2DTO(Employee emp) {
-		EmployeeDTO dto = new EmployeeDTO();
-		dto.setAddress(emp.getAddress().getStreetAddress());
-		dto.setCity(emp.getAddress().getCity());
-		dto.setDepartmentId(emp.getDepartmentId());
-		dto.setEmail(emp.getEmail());
-		dto.setEmpId(emp.getEmpId());
-		dto.setFirstName(emp.getFirstName());
-		dto.setLastName(emp.getLastName());
-		dto.setManagerId(emp.getManagerId());
-		dto.setPhone(emp.getPhone());
-		dto.setStartDate(LocalDate.of(emp.getEmploymentStartDate().getYear(), 
-				emp.getEmploymentStartDate().getMonth(), 
-				emp.getEmploymentStartDate().getDay()));
-		dto.setState(emp.getAddress().getState());
-		dto.setTitle(emp.getTitle());
-		dto.setZipCode(emp.getAddress().getZipCode());
-		return dto;
-	}
 }
