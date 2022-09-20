@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "dev.rnd.grpc.employee";
+option java_outer_classname = "EmployeeProto";
+
+package employee;
+
+import "google/protobuf/empty.proto";
+import "google/rpc/status.proto";
+
+service EmployeeController {
+
+  rpc GetEmployee(EmployeeID) returns (Employee) {}
+  rpc CreateEmployee(Employee) returns (EmployeeID) {}
+  
+  // server side streaming
+//  rpc ListLocations(google.protobuf.Empty) returns (stream Location) {}
+  
+  // client side streaming
+//  rpc BulkCreatLocation(stream Location) returns (CountHolder) {}
+
+  // bi-directional streaming
+//  rpc BulkCreatLocation2(stream Location) returns (stream BulkCreateLocationResponse) {}
+}
+
+message EmployeeID {
+	int32 empId = 1;
+}
+
+message Employee {
+ 	int32 empId = 1;
+ 	string first_name = 2;
+ 	string last_name = 3;
+ 	int32 departmentId = 4;
+ 	int32 managerId = 5;
+ 	string title = 6;
+ 	string email = 7;
+ 	 
+ 	string phone = 8;
+	Address address = 9;
+	
+	Date employment_start_date = 10;
+}
+
+message Address {
+	string street_address = 1;
+	string city = 2;
+	string state = 3;
+	string zip_code = 4;
+}
+message Date {
+  // Year of the date. Must be from 1 to 9999, or 0 to specify a date without
+  // a year.
+  int32 year = 1;
+
+  // Month of a year. Must be from 1 to 12, or 0 to specify a year without a
+  // month and day.
+  int32 month = 2;
+
+  // Day of a month. Must be from 1 to 31 and valid for the year and month, or 0
+  // to specify a year by itself or a year and month where the day isn't
+  // significant.
+  int32 day = 3;
+}
+
+message Count {
+	int32 count = 1;
+}
+
