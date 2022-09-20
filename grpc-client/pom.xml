@@ -1,0 +1,79 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+	<groupId>dev.rnd</groupId>
+	<artifactId>gRPCvsREST</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <groupId>dev.rnd.grpc</groupId>
+  <artifactId>grpc-client</artifactId>
+  <packaging>jar</packaging>
+
+  <name>grpc-client</name>
+
+  <properties>
+    <maven.compiler.source>${jdk.version}</maven.compiler.source>
+    <maven.compiler.target>${jdk.version}</maven.compiler.target>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${grpc.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+
+  <dependencies>
+	<dependency>
+      <groupId>com.pointclickcare.grpc</groupId>
+      <artifactId>grpc-server</artifactId>
+      <version>0.0.3-SNAPSHOT</version>
+    </dependency>  
+  
+    <dependency>
+      <groupId>dev.rnd.grpc</groupId>
+      <artifactId>grpc-server</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java-util</artifactId>
+      <version>${protobuf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.9.0</version> <!-- prevent downgrade via protobuf-java-util -->
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>annotations-api</artifactId>
+      <version>6.0.53</version>
+      <scope>provided</scope> <!-- not needed at runtime -->
+    </dependency>
+    
+  </dependencies>
+</project>
