@@ -1,6 +1,11 @@
 package dev.rnd.grpc.client;
 
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +36,8 @@ public class GrpcClient {
   private List<EmployeeDTO> sampleDataAsList = new ArrayList<>();
   private List<Integer> employeeIDs;
   private ExecutorService executor;
+  
+  private List<TestResult> testResults = new ArrayList<>();
   
   private Random rnd = new Random(System.currentTimeMillis());
 
@@ -132,6 +139,9 @@ public class GrpcClient {
 	}
 	
 	private void testGrpcMethod(String testMethodName, Runnable r) {
+		TestResult testResult = new TestResult(testMethodName, props.getThreadCount(), props.getIterationCount());
+		testResults.add(testResult);
+		
 		for (int i=0; i< props.getThreadCount(); i++) {
 			executor.execute(() -> {
 				long start = System.currentTimeMillis();
@@ -139,8 +149,9 @@ public class GrpcClient {
 					r.run();
 				}
 				long duration = System.currentTimeMillis() - start;
+				testResult.addExecutionTime(duration);
 				
-				logger.log(Level.INFO, "{0} {1}ms, thread: {2}", new Object[] {testMethodName, duration, Thread.currentThread().getId()});
+//				logger.log(Level.INFO, "{0} {1}ms, thread: {2}", new Object[] {testMethodName, duration, Thread.currentThread().getId()});
 			});
 		}
 		
@@ -157,7 +168,7 @@ public class GrpcClient {
 		EmployeeDTO emp = sampleDataAsList.get(idx);
 		
 		employeeClient.createEmployee(emp);
-//		logger.info("create employee wiht ID: "+ empId);
+//		logger.info("create employee with ID: "+ empId);
 	}
 	
 	private void warmUp() {
@@ -166,8 +177,29 @@ public class GrpcClient {
 		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
 	}
 	
-	private void saveResults() {
+	private void saveTestResults() {
+		if (testResults.size() == 0)
+			return ;
 		
+		File outFile = new File(props.getOutputFileName());
+		boolean addCSVHeader = !outFile.exists() || !props.isAppendToOutputFile();
+		
+		try ( FileWriter fw = new FileWriter(outFile, props.isAppendToOutputFile());
+					BufferedWriter bw = new BufferedWriter(fw);
+					PrintWriter pw = new PrintWriter(bw);
+				) {
+			
+			if (addCSVHeader)
+				pw.println(TestResult.getCSVHeader());
+			
+			for (TestResult res : testResults)
+				pw.println(res.getResultAsCSV());
+			
+			logger.log(Level.INFO, "Test results saved in {0}", outFile.getAbsolutePath());
+			
+		} catch (IOException ex) {
+			ex.printStackTrace();
+		}
 	}
 	
 	private void shutdown() throws InterruptedException {
@@ -175,7 +207,7 @@ public class GrpcClient {
 		executor.awaitTermination(30, TimeUnit.SECONDS);
 		channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
 		
-		saveResults();
+		saveTestResults();
 	}	
 
 }

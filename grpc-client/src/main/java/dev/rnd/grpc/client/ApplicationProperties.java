@@ -12,7 +12,10 @@ public class ApplicationProperties {
 	private static final String ITERATION_COUNT = "test.iterationCount";
   private static final String GET_EMPLOYEE_TEST = "test.getEmployee";
   private static final String CREATE_EMPLOYEE_TEST = "test.createEmployee";
-	
+
+  private static final String OUTPUT_FILE_NAME = "test.outputFile";
+  private static final String APPEND_TO_OUTPUT_FILE = "test.appendToOutputFile";
+  
 	private Properties config;
   
 	private String serverAddress;
@@ -23,6 +26,8 @@ public class ApplicationProperties {
   private boolean testGetEmployeeON;
   private boolean testCreateEmployeeON;
   
+	private String outputFileName;
+	private boolean appendToOutputFile;
 	
 	private static ApplicationProperties _theInstance = null;
   
@@ -36,10 +41,10 @@ public class ApplicationProperties {
 	
 	private void loadAppProperties() {
 		config = new Properties();
-		try {
-			InputStream input = ApplicationProperties.class.getClassLoader().getResourceAsStream("application.properties");
+		try (InputStream input = 
+				ApplicationProperties.class.getClassLoader().getResourceAsStream("application.properties")) {
+			
 			config.load(input);
-			input.close();
 			
 			serverAddress = config.getProperty(SERVER_ADDRESS);
 			javaLogging = config.getProperty(JAVA_LOGGING);
@@ -48,6 +53,9 @@ public class ApplicationProperties {
 			iterationCount = Integer.valueOf(config.getProperty(ITERATION_COUNT));
 			testGetEmployeeON = Boolean.valueOf(config.getProperty(GET_EMPLOYEE_TEST));
 			testCreateEmployeeON = Boolean.valueOf(config.getProperty(CREATE_EMPLOYEE_TEST));
+			
+			outputFileName = config.getProperty(OUTPUT_FILE_NAME);
+			appendToOutputFile = Boolean.valueOf(config.getProperty(APPEND_TO_OUTPUT_FILE));
 		}
 		catch (IOException e) {
 			e.printStackTrace();
@@ -76,6 +84,14 @@ public class ApplicationProperties {
 
 	public int getIterationCount() {
 		return iterationCount;
+	}
+
+	public String getOutputFileName() {
+		return outputFileName;
+	}
+
+	public boolean isAppendToOutputFile() {
+		return appendToOutputFile;
 	}
 
 }

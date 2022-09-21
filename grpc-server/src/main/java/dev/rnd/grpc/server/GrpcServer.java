@@ -44,10 +44,10 @@ public class GrpcServer
   
   private void loadConfigProperties() {
   	config = new Properties();
-  	try {
-  		InputStream input = GrpcServer.class.getClassLoader().getResourceAsStream("application.properties");
+  	try (InputStream input = 
+  			GrpcServer.class.getClassLoader().getResourceAsStream("application.properties")) {
+
 			config.load(input);
-			input.close();
 		}
 		catch (IOException e) {
 			e.printStackTrace();
