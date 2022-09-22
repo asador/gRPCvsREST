@@ -1,6 +1,7 @@
 package dev.rnd.grpc.server.controller;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
@@ -10,6 +11,8 @@ import dev.rnd.grpc.employee.Count;
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc.EmployeeGrpcServiceImplBase;
 import dev.rnd.grpc.employee.EmployeeID;
+import dev.rnd.grpc.employee.EmployeeIDList;
+import dev.rnd.grpc.employee.EmployeeList;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import dev.rnd.grpc.server.service.EmployeeService;
 import io.grpc.Metadata;
@@ -88,6 +91,37 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 		responseObserver.onCompleted();
 		logger.info("called getEmployeeIDs: " + emps.size() + " emp IDs returned");
 	}	
+	
+	@Override
+	public void getEmployeesList(Count request, StreamObserver<EmployeeList> responseObserver) {
+		int count = request.getCount();
+		Collection<EmployeeDTO> emps = employeeService.getEmployees();
+		count = Math.min(count, emps.size());
+		
+		EmployeeList.Builder builder = EmployeeList.newBuilder();
+		Iterator<EmployeeDTO> iterator = emps.iterator();
+		for (int i=0; i<count; i++) {
+			builder.addEmployee(EmployeeUtil.dto2EmployeeProto(iterator.next()));
+		}
+		
+		responseObserver.onNext(builder.build());
+		responseObserver.onCompleted();
+	}
+
+	@Override
+	public void createEmployeesList(EmployeeList request, StreamObserver<EmployeeIDList> responseObserver) {
+		EmployeeIDList.Builder builder = EmployeeIDList.newBuilder();
+		
+		for (Employee emp : request.getEmployeeList()) {
+			int empId = employeeService.createEmployee(EmployeeUtil.employeeProto2DTO(emp));
+			builder.addEmployeeID(EmployeeID.newBuilder().setEmpId(empId).build());
+		}
+		
+		responseObserver.onNext(builder.build());
+		responseObserver.onCompleted();
+
+	}
+
 	
 //	@Override
 //	public void listLocations(Empty request, StreamObserver<Location> responseObserver) {
@@ -191,7 +225,7 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 //		};
 //	}
 
-	private String nullToEmpty(String value) {
+	String nullToEmpty(String value) {
 		return (value == null) ? "" : value;
 	}
 	

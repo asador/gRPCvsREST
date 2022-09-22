@@ -58,7 +58,8 @@ public class GrpcServer
   /** Start serving requests. */
   public void start() throws IOException {
     server.start();
-    logger.info("Server started, listening on " + server.getPort());
+    System.out.println("Server started, listening on " + server.getPort());
+    
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {

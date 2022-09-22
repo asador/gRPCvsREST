@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import dev.rnd.grpc.employee.Employee;
+import dev.rnd.grpc.employee.EmployeeID;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import io.grpc.Grpc;
@@ -71,17 +73,36 @@ public class GrpcClient {
 		warmUp();
 		
 		if (props.isTestGetEmployeeON()) {			
-			testGrpcMethod("getEmployee", () -> {
+			testGrpcMethod("getEmployeeByID", 
+					props.getThreadCount(), 
+					props.getIterationCount(), 
+					() -> {
 				testGetEmployeeByID();
 			});
 		}
 		
 		if (props.isTestCreateEmployeeON()) {
-			testGrpcMethod("createEmployee", () -> {
+			testGrpcMethod("createEmployee", 
+					props.getThreadCount(), 
+					props.getIterationCount(), 
+					() -> {
 				testCreateEmployee();
 			});
 		}
 		
+		int[] batchSizes = new int[] {10, 100, 200, 1000};
+		
+		for (int batchSize: batchSizes) {
+			testGrpcMethod("getEmployeesList-"+batchSize, 1, 10, () -> {
+				testGetEmployeesList(batchSize);
+			});
+			
+			testGrpcMethod("createEmployeesList-"+batchSize, 1, 10, () -> {
+				testCreateEmployeesList(batchSize);
+			});
+			
+		}
+				
 //		EmployeeGrpcClient employeeClient = new EmployeeGrpcClient(channel);
 //		try {
 //			Random rnd = new Random(System.currentTimeMillis());
@@ -138,20 +159,25 @@ public class GrpcClient {
 //		}
 	}
 	
-	private void testGrpcMethod(String testMethodName, Runnable r) {
-		TestResult testResult = new TestResult(testMethodName, props.getThreadCount(), props.getIterationCount());
+	private void testGrpcMethod(String testMethodName, int nThreads, int iterationCount, Runnable r) {
+		TestResult testResult = new TestResult(testMethodName, nThreads, iterationCount);
 		testResults.add(testResult);
 		
-		for (int i=0; i< props.getThreadCount(); i++) {
+		for (int i=0; i< nThreads; i++) {
 			executor.execute(() -> {
+				int errorCount = 0;
 				long start = System.currentTimeMillis();
-				for (int j=0; j<props.getIterationCount(); j++) {
-					r.run();
+				for (int j=0; j<iterationCount; j++) {
+					try {
+						r.run();
+					}
+					catch (Exception e) {
+						errorCount++;
+						e.printStackTrace();
+					}
 				}
 				long duration = System.currentTimeMillis() - start;
-				testResult.addExecutionTime(duration);
-				
-//				logger.log(Level.INFO, "{0} {1}ms, thread: {2}", new Object[] {testMethodName, duration, Thread.currentThread().getId()});
+				testResult.addExecutionResult((int)duration, errorCount);				
 			});
 		}
 		
@@ -169,6 +195,20 @@ public class GrpcClient {
 		
 		employeeClient.createEmployee(emp);
 //		logger.info("create employee with ID: "+ empId);
+	}
+	
+	private void testGetEmployeesList(int batchSize) {
+		List<Employee> empList = employeeClient.getEmployeesList(batchSize);
+//		logger.info("Get employee list: " + empList.toString());
+	}
+	
+	private void testCreateEmployeesList(int batchSize) {
+		List<EmployeeDTO> empDTOList = new ArrayList<>();
+		for (int i=0; i<batchSize; i++)
+			empDTOList.add(sampleDataAsList.get(i));
+		
+		List<EmployeeID> idList = employeeClient.createEmployeesList(empDTOList);
+//		logger.info("created employee IDs: " + idList);
 	}
 	
 	private void warmUp() {

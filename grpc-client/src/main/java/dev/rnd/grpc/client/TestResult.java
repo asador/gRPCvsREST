@@ -13,9 +13,9 @@ public class TestResult {
 	private int threadCount;
 	private int iterationCountPerThread;
 	
-	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,execTime";
+	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,errorPercentage";
 	
-	private Map<String, Long> executionTimePerThread = new ConcurrentHashMap<>();
+	private Map<String, Integer[]> executionPerThread = new ConcurrentHashMap<>();
 	
 	public TestResult(String testName, int threadCount, int iterationCount) {
 		this.testName = testName;
@@ -24,14 +24,20 @@ public class TestResult {
 		executionTime = LocalDateTime.now();
 	}
 	
-	public void addExecutionTime(long execTimeMillis) {
-		executionTimePerThread.put(Thread.currentThread().getName(), execTimeMillis);
+	public void addExecutionResult(int execTimeMillis, int errors) {
+		executionPerThread.put(Thread.currentThread().getName(), new Integer[] {execTimeMillis, errors});
 	}
 	
-	public long getAverageExecTime() {
-		OptionalDouble avg = executionTimePerThread.values().stream().mapToLong(a -> a).average();
+	public int getAverageExecTime() {
+		OptionalDouble avg = executionPerThread.values().stream().mapToInt(a -> a[0]).average();
 		
-		return (avg.isPresent()) ? (long)avg.getAsDouble() : 0;
+		return (avg.isPresent()) ? (int)avg.getAsDouble() : 0;
+	}
+	
+	public double getErrorsPercentage() {
+		int totalErrors = executionPerThread.values().stream().mapToInt(a -> a[1]).sum();
+		
+		return (double)(totalErrors * 100) / (threadCount * iterationCountPerThread);
 	}
 
 	public LocalDateTime getExecutionTime() {
@@ -56,7 +62,7 @@ public class TestResult {
 	
 	public String getResultAsCSV() {
 		StringBuilder csv = new StringBuilder();
-		csv.append(executionTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm")));
+		csv.append(executionTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm:ss")));
 		csv.append(',');
 		
 		csv.append(testName);
@@ -69,6 +75,9 @@ public class TestResult {
 		csv.append(',');
 		
 		csv.append(getAverageExecTime());
+		csv.append(',');
+		
+		csv.append(getErrorsPercentage());
 		
 		return csv.toString();
 	}

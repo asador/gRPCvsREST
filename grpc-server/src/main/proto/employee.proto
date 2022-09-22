@@ -11,20 +11,21 @@ import "google/rpc/status.proto";
 
 service EmployeeGrpcService {
 
-  rpc GetEmployee(EmployeeID) returns (Employee) {}
+  // utility methods
   rpc GetEmployeesCount(google.protobuf.Empty) returns (Count) {}
-  rpc GetEmployeeIDs(google.protobuf.Empty) returns (stream EmployeeID) {}
-  
+  rpc GetEmployeeIDs(google.protobuf.Empty) returns (stream EmployeeID) {} 
+
+  // read/write single object 	
+  rpc GetEmployee(EmployeeID) returns (Employee) {}
   rpc CreateEmployee(Employee) returns (EmployeeID) {}
   
-  // server side streaming
-//  rpc ListLocations(google.protobuf.Empty) returns (stream Location) {}
+  // read/write list of objects
+  rpc GetEmployeesList(Count) returns (EmployeeList) {}
+  rpc CreateEmployeesList(EmployeeList) returns (EmployeeIDList) {}
   
-  // client side streaming
-//  rpc BulkCreatLocation(stream Location) returns (CountHolder) {}
-
-  // bi-directional streaming
-//  rpc BulkCreatLocation2(stream Location) returns (stream BulkCreateLocationResponse) {}
+  // read/write objects with streaming
+//  rpc GetEmployeesStreaming(google.protobuf.Empty) returns (stream Employee) {}
+//  rpc CreatEmployeesStreaming(stream Employee) returns (stream CreateEmployeeResponse) {}
 }
 
 message EmployeeID {
@@ -71,3 +72,9 @@ message Count {
 	int32 count = 1;
 }
 
+message EmployeeIDList {
+	repeated EmployeeID employeeID = 1;
+}
+message EmployeeList {
+	repeated Employee employee = 1;
+}

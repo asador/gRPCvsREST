@@ -8,11 +8,14 @@ import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
 
+import dev.rnd.grpc.employee.Count;
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc.EmployeeGrpcServiceBlockingStub;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc.EmployeeGrpcServiceStub;
 import dev.rnd.grpc.employee.EmployeeID;
+import dev.rnd.grpc.employee.EmployeeIDList;
+import dev.rnd.grpc.employee.EmployeeList;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import io.grpc.Channel;
@@ -60,6 +63,21 @@ public class EmployeeGrpcClient {
 		return empIDs;
 	}
   
+	public List<Employee> getEmployeesList(int count) {
+		EmployeeList empList = blockingStub.getEmployeesList(Count.newBuilder().setCount(count).build());
+		
+		return empList.getEmployeeList();
+	}
+	
+	public List<EmployeeID> createEmployeesList(List<EmployeeDTO> dtoList) {
+		EmployeeList.Builder builder = EmployeeList.newBuilder();
+		for (EmployeeDTO dto : dtoList)
+			builder.addEmployee(EmployeeUtil.dto2EmployeeProto(dto));
+		
+		EmployeeIDList idList = blockingStub.createEmployeesList(builder.build());
+		return idList.getEmployeeIDList();
+	}
+	
 //  public List<Location> getLocations() {
 //  	List<Location> locations = new ArrayList<Location>();
 //  	Iterator<Location> iterator = blockingStub.listLocations(Empty.newBuilder().build());
