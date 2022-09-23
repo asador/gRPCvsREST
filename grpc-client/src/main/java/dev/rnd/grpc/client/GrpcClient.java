@@ -7,13 +7,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,15 +36,14 @@ public class GrpcClient {
   private ApplicationProperties props;
   private ManagedChannel channel;
   private EmployeeGrpcClient employeeClient;
+  private ExecutorService executor;
   
   private Map<Integer, EmployeeDTO> sampleData = new HashMap<>();
   private List<EmployeeDTO> sampleDataAsList = new ArrayList<>();
   private List<Integer> employeeIDs;
-  private ExecutorService executor;
-  
-  private List<TestResult> testResults = new ArrayList<>();
   
   private Random rnd = new Random(System.currentTimeMillis());
+  private List<TestResult> testResults = new ArrayList<>();  
 
   GrpcClient() {
   	props = ApplicationProperties.getAppProperties();
@@ -72,36 +74,31 @@ public class GrpcClient {
 	private void runTests() {
 		warmUp();
 		
-		if (props.isTestGetEmployeeON()) {			
-			testGrpcMethod("getEmployeeByID", 
-					props.getThreadCount(), 
-					props.getIterationCount(), 
-					() -> {
-				testGetEmployeeByID();
-			});
+		// single object read/write
+		int[] iterations = new int[] {10000};
+		for (int count : iterations) {
+			testGrpcMethod("getEmployeeByID", props.getThreadCount(),	count, 
+					() -> testGetEmployeeByID());
+
+			testGrpcMethod("createEmployee", props.getThreadCount(), count, 
+					() -> testCreateEmployee());
 		}
 		
-		if (props.isTestCreateEmployeeON()) {
-			testGrpcMethod("createEmployee", 
-					props.getThreadCount(), 
-					props.getIterationCount(), 
-					() -> {
-				testCreateEmployee();
-			});
-		}
+		// batch/list of objects read/write
+		iterations = new int[] {1000};
+		int[] batchSizes = new int[] {10, 100, 1000};
+		for (int count : iterations)
+			for (int batch : batchSizes) {
 		
-		int[] batchSizes = new int[] {10, 100, 200, 1000};
+				testGrpcMethod("getEmployeesList-"+batch, props.getThreadCount(), count, 
+						() -> testGetEmployeesList(batch));
+				
+				testGrpcMethod("createEmployeesList-"+batch, props.getThreadCount(), count, 
+						() -> testCreateEmployeesList(batch));			
+			}
 		
-		for (int batchSize: batchSizes) {
-			testGrpcMethod("getEmployeesList-"+batchSize, 1, 10, () -> {
-				testGetEmployeesList(batchSize);
-			});
-			
-			testGrpcMethod("createEmployeesList-"+batchSize, 1, 10, () -> {
-				testCreateEmployeesList(batchSize);
-			});
-			
-		}
+		// stream objects read/write
+		//TBD
 				
 //		EmployeeGrpcClient employeeClient = new EmployeeGrpcClient(channel);
 //		try {
@@ -159,28 +156,51 @@ public class GrpcClient {
 //		}
 	}
 	
-	private void testGrpcMethod(String testMethodName, int nThreads, int iterationCount, Runnable r) {
-		TestResult testResult = new TestResult(testMethodName, nThreads, iterationCount);
-		testResults.add(testResult);
+	private boolean isTestEnabled(String testName) {
+		String testKey = "test." + testName;
+		return props.getProperty(testKey) == null || Boolean.valueOf(props.getProperty(testKey));
+	}
+	
+	private void testGrpcMethod(String testName, int nThreads, int iterationCount, Runnable test) {
+		if (!isTestEnabled(testName)) {
+			logger.log(Level.INFO, "Skipped test {0}", testName);
+			return;
+		}
+					
+		CountDownLatch latch = new CountDownLatch(nThreads);
+		List<Long> execTimes = Collections.synchronizedList(new ArrayList<>());
+		AtomicInteger errorCount = new AtomicInteger(0);
 		
 		for (int i=0; i< nThreads; i++) {
 			executor.execute(() -> {
-				int errorCount = 0;
-				long start = System.currentTimeMillis();
-				for (int j=0; j<iterationCount; j++) {
+				for (int j=0; j < iterationCount; j++) {
+					long t1 = System.nanoTime();
 					try {
-						r.run();
+						test.run();
 					}
 					catch (Exception e) {
-						errorCount++;
+						errorCount.incrementAndGet();
 						e.printStackTrace();
 					}
+					long t2 = System.nanoTime();
+					execTimes.add(t2-t1);
 				}
-				long duration = System.currentTimeMillis() - start;
-				testResult.addExecutionResult((int)duration, errorCount);				
+				
+				latch.countDown();
 			});
 		}
 		
+		try {
+			latch.await(30, TimeUnit.SECONDS);
+
+			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), execTimes);
+			testResults.add(testResult);
+
+			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void testGetEmployeeByID() {

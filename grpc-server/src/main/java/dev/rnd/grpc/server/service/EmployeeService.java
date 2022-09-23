@@ -11,9 +11,13 @@ import dev.rnd.grpc.server.controller.EmployeeUtil;
 public class EmployeeService {
 	
 	private Map<Integer, EmployeeDTO> employeeRepo = new HashMap<>();
+	private boolean storeRecordsOnCreate;
 	
 	private Random rnd = new Random(System.currentTimeMillis());
 		
+	public EmployeeService(boolean storeOnCreate) {
+		storeRecordsOnCreate = storeOnCreate;
+	}
 	public EmployeeDTO getEmployeeById(int empId) {
 		return employeeRepo.get(empId);
 	}
@@ -24,8 +28,12 @@ public class EmployeeService {
 	
 	public int createEmployee(EmployeeDTO dto) {
 		int empId = rnd.nextInt(1000000);
-		dto.setEmpId(empId);
-		employeeRepo.put(empId, dto);
+
+		// to make the tests lighter and eliminate the impact of employeeRepo growth during multiple test runs
+		if (storeRecordsOnCreate) {
+			dto.setEmpId(empId);
+			employeeRepo.put(empId, dto);
+		}
 		
 		return empId;
 	}

@@ -31,7 +31,7 @@ public class GrpcServer
   	if ("OFF".equalsIgnoreCase(config.getProperty("java.logging")))
   		Logger.getLogger(GrpcServer.class.getPackageName()).setLevel(Level.OFF);
 
-  	EmployeeService empService = new EmployeeService();
+  	EmployeeService empService = new EmployeeService(Boolean.valueOf(config.getProperty("storeOnCreate")));
   	empService.loadDataSet(SAMPLE_DATA_SET);
   	
     BindableService employeeGrpcService = new EmployeeGrpcController(empService);
