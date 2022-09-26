@@ -3,6 +3,7 @@ package dev.rnd.grpc.server.controller;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 
 import dev.rnd.grpc.employee.Address;
@@ -72,14 +73,19 @@ public class EmployeeUtil {
 		dto.setZipCode(fields[12]);
 		
 		return dto;
-		
 	}
 
 	public static void loadDataSet(String sampleDateFileName, Map<Integer, EmployeeDTO> dataset) {
+		Random rnd = new Random(System.currentTimeMillis());
+		
 		Scanner scanner = new Scanner(EmployeeUtil.class.getClassLoader().getResourceAsStream(sampleDateFileName));
     scanner.nextLine();
 		while (scanner.hasNextLine()) {
         EmployeeDTO dto = EmployeeUtil.csv2DTO(scanner.nextLine());
+//        if (dataset.containsKey(dto.getEmpId()))
+//        	System.out.println(dto.getEmpId());
+        while (dataset.containsKey(dto.getEmpId()))
+        	dto.setEmpId(rnd.nextInt(10000000));
         dataset.put(dto.getEmpId(), dto);
     }
 		scanner.close();

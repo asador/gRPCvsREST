@@ -2,16 +2,18 @@ package dev.rnd.grpc.server.controller;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.protobuf.Empty;
 import com.google.rpc.ErrorInfo;
 
 import dev.rnd.grpc.employee.Count;
+import dev.rnd.grpc.employee.CreateEmployeeListResponse;
+import dev.rnd.grpc.employee.CreateEmployeeResponse;
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.employee.EmployeeGrpcServiceGrpc.EmployeeGrpcServiceImplBase;
 import dev.rnd.grpc.employee.EmployeeID;
-import dev.rnd.grpc.employee.EmployeeIDList;
 import dev.rnd.grpc.employee.EmployeeList;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import dev.rnd.grpc.server.service.EmployeeService;
@@ -67,17 +69,18 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 	}
 
 	@Override
-  public void createEmployee(Employee request, StreamObserver<EmployeeID> responseObserver) {
+  public void createEmployee(Employee request, StreamObserver<CreateEmployeeResponse> responseObserver) {
   	EmployeeDTO dto = EmployeeUtil.employeeProto2DTO(request);
   	
-  	int employeeId = employeeService.createEmployee(dto);
+  	int empId = employeeService.createEmployee(dto);
   	
-  	EmployeeID empID = EmployeeID.newBuilder().setEmpId(employeeId).build();
-  	
-  	responseObserver.onNext(empID);
+		CreateEmployeeResponse createResponse = CreateEmployeeResponse.newBuilder()
+				.setEmployeeId(EmployeeID.newBuilder().setEmpId(empId))
+				.build();
+		responseObserver.onNext(createResponse);
   	responseObserver.onCompleted();
 
-  	logger.info("called createEmployee: " + employeeId);
+  	logger.info("called createEmployee: " + empId);
   }
 
 	@Override
@@ -109,12 +112,13 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 	}
 
 	@Override
-	public void createEmployeesList(EmployeeList request, StreamObserver<EmployeeIDList> responseObserver) {
-		EmployeeIDList.Builder builder = EmployeeIDList.newBuilder();
+	public void createEmployeesList(EmployeeList request, StreamObserver<CreateEmployeeListResponse> responseObserver) {
+		CreateEmployeeListResponse.Builder builder = CreateEmployeeListResponse.newBuilder();
 		
 		for (Employee emp : request.getEmployeeList()) {
 			int empId = employeeService.createEmployee(EmployeeUtil.employeeProto2DTO(emp));
-			builder.addEmployeeID(EmployeeID.newBuilder().setEmpId(empId).build());
+			builder.addCreateResponse(CreateEmployeeResponse.newBuilder()
+					.setEmployeeId(EmployeeID.newBuilder().setEmpId(empId)));
 		}
 		
 		responseObserver.onNext(builder.build());
@@ -122,109 +126,63 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 
 	}
 
-	
-//	@Override
-//	public void listLocations(Empty request, StreamObserver<Location> responseObserver) {
-//		Collection<EmployeeDTO> locations = employeeService.getLocations();
-//		
-//		for (EmployeeDTO dto: locations) {
-//			Location loc = Location.newBuilder()
-//					.setLocId(dto.getLocationId())
-//					.setName(dto.getName())
-//					.setOrgId(dto.getOrgId())
-//					.setAddress(nullToEmpty(dto.getAddress()))
-//					.build();
-//					
-//			responseObserver.onNext(loc);			
-//		}
-//		
-//  	responseObserver.onCompleted();
-//   	logger.info("called listLocations: " + locations.size() + " locations returned");
-//
-//	}
-//
-//	@Override
-//	public StreamObserver<Location> bulkCreatLocation(final StreamObserver<CountHolder> responseObserver) {
-//		return new StreamObserver<Location>() {
-//			int count = 0;
-//			
-//			@Override
-//			public void onNext(Location loc) {
-//		  	EmployeeDTO dto = new EmployeeDTO();
-//		  	dto.setName(loc.getName());
-//		  	dto.setOrgId(loc.getOrgId());
-//		  	dto.setAddress(loc.getAddress());
-//		  	employeeService.createLocation(dto);
-//		  	count++;
-//			}
-//
-//			@Override
-//			public void onError(Throwable t) {
-//				logger.log(Level.WARNING, t.getMessage(), t);
-//			}
-//
-//			@Override
-//			public void onCompleted() {
-//				CountHolder ch = CountHolder.newBuilder().setCount(count).build();
-//				responseObserver.onNext(ch);
-//				responseObserver.onCompleted();
-//				
-//				logger.info("called bulkCreatLocation: " + count + " locations created");
-//			}
-//			
-//		};
-//	}
-//
-//	@Override
-//	public StreamObserver<Location> bulkCreatLocation2(final StreamObserver<BulkCreateLocationResponse> responseObserver) {
-//		return new StreamObserver<Location>() {
-//			private int count = 0;
-//
-//			@Override
-//			public void onNext(Location loc) {
-//				if (loc.getOrgId() <= 0) {
-//					// error handling example in streams
-//					com.google.rpc.Status errorStatus = com.google.rpc.Status.newBuilder()
-//							.setCode(Code.INVALID_ARGUMENT_VALUE)
-//							.setMessage("OrgId cannot be negative")
-//							.build();
-//					BulkCreateLocationResponse locCreateResponse = BulkCreateLocationResponse.newBuilder()
-//							.setErrorStatus(errorStatus).build();
-//					responseObserver.onNext(locCreateResponse);
-//					
-//				} else {
-//					
-//					EmployeeDTO dto = new EmployeeDTO();
-//					dto.setName(loc.getName());
-//					dto.setOrgId(loc.getOrgId());
-//					dto.setAddress(loc.getAddress());
-//					
-//					int locationId = employeeService.createLocation(dto);
-//					LocationID locId = LocationID.newBuilder().setLocId(locationId).build();
-//
-//					BulkCreateLocationResponse locCreateResponse = BulkCreateLocationResponse.newBuilder()
-//							.setLocationId(locId).build();
-//					responseObserver.onNext(locCreateResponse);
-//					count++;
-//				}
-//		  	
-//			}
-//
-//			@Override
-//			public void onError(Throwable t) {
-//				logger.log(Level.WARNING, t.getMessage(), t);
-//			}
-//
-//			@Override
-//			public void onCompleted() {
-//				responseObserver.onCompleted();
-//				
-//				logger.info("called bulkCreatLocation2: " + count + " locations created");
-//			}
-//			
-//		};
-//	}
+	@Override
+	public void getEmployeesStreaming(Empty request, StreamObserver<Employee> responseObserver) {
+		Collection<EmployeeDTO> emps = employeeService.getEmployees();
 
+		for (EmployeeDTO dto : emps) {
+			responseObserver.onNext(EmployeeUtil.dto2EmployeeProto(dto));
+		}
+
+		responseObserver.onCompleted();
+		logger.info("called getEmployeesStreaming: " + emps.size() + " employees returned");
+	}
+	
+	private com.google.rpc.Status validate(Employee e) {
+//		com.google.rpc.Status errorStatus = com.google.rpc.Status.newBuilder().setCode(Code.INVALID_ARGUMENT_VALUE)
+//				.setMessage("Employee object is invalid").build();
+
+		return null;
+	}
+
+	@Override
+	public StreamObserver<Employee> creatEmployeesStreaming(StreamObserver<CreateEmployeeResponse> responseObserver) {
+		return new StreamObserver<Employee>() {
+			private int count = 0;
+
+			@Override
+			public void onNext(Employee emp) {
+				com.google.rpc.Status errorStatus = validate(emp);
+				if (errorStatus != null) {
+					CreateEmployeeResponse createResponse = CreateEmployeeResponse.newBuilder()
+							.setErrorStatus(errorStatus).build();
+					responseObserver.onNext(createResponse);
+				} else {
+
+					int empId = employeeService.createEmployee(EmployeeUtil.employeeProto2DTO(emp));
+					
+					CreateEmployeeResponse createResponse = CreateEmployeeResponse.newBuilder()
+							.setEmployeeId(EmployeeID.newBuilder().setEmpId(empId))
+							.build();
+					responseObserver.onNext(createResponse);
+					count++;
+				}
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				logger.log(Level.WARNING, t.getMessage(), t);
+			}
+
+			@Override
+			public void onCompleted() {
+				responseObserver.onCompleted();
+
+				logger.info("called creatEmployeesStreaming: " + count + " employees created");
+			}
+		};
+	}
+	
 	String nullToEmpty(String value) {
 		return (value == null) ? "" : value;
 	}

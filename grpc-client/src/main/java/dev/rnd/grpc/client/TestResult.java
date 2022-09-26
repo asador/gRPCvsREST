@@ -8,7 +8,7 @@ import java.util.List;
 
 public class TestResult {
 
-	private DecimalFormat df = new DecimalFormat("#.###");
+	private DecimalFormat df = new DecimalFormat("#.##");
 	
 	private LocalDateTime executionTime;
 	private String testName;

@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import dev.rnd.grpc.employee.CreateEmployeeResponse;
 import dev.rnd.grpc.employee.Employee;
-import dev.rnd.grpc.employee.EmployeeID;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
 import io.grpc.Grpc;
@@ -97,63 +97,15 @@ public class GrpcClient {
 						() -> testCreateEmployeesList(batch));			
 			}
 		
-		// stream objects read/write
-		//TBD
-				
-//		EmployeeGrpcClient employeeClient = new EmployeeGrpcClient(channel);
-//		try {
-//			Random rnd = new Random(System.currentTimeMillis());
-//
-//			int locId1 = employeeClient.createLocation(10, "Location A-" + rnd.nextInt(1000));
-//			int locId2 = employeeClient.createLocation(20, "Location B-" + rnd.nextInt(1000));
-//			int locId3 = employeeClient.createLocation(30, "Location C-" + rnd.nextInt(1000));
-//
-//			Location l1 = employeeClient.getLocation(locId1);
-//			printLocation(l1);
-//
-//			Location l2 = employeeClient.getLocation(locId2);
-//			printLocation(l2);
-//
-//			int numBulkLocation = 5;
-//			List<Location> locations = generateLocations(numBulkLocation, false);
-//			int createdLocations = employeeClient.bulkCreateLocation(locations);
-//			System.out.printf("BulkCreateLocation: expected=%d, actual=%d \n", numBulkLocation, createdLocations);
-//
-//			numBulkLocation = 3;
-//			locations = generateLocations(numBulkLocation, true);
-//			List<Integer> locationIDs = employeeClient.bulkCreateLocation2(locations);
-//			System.out.printf("BulkCreateLocation2: expected=%d, actual=%d \n", numBulkLocation + 1, locationIDs.size());
-//			for (int locId : locationIDs)
-//				System.out.printf("locId=%d \n", locId);
-//
-//			locations = employeeClient.getLocations();
-//			System.out.printf("All locations count: %d\n", locations.size());
-//			for (Location l : locations)
-//				printLocation(l);
-//
-//			// calling api that requires an auth token passed as "Authorization" header;
-//			Location l3 = employeeClient.getLocationSecure(locId1);
-//			printLocation(l3);
-//
-//			// error scenarios which causes a runtime exception
-//			employeeClient.getLocation(9999);
-//
-//		}
-//		catch (Exception e) {
-//			if (e instanceof StatusRuntimeException) {
-//				StatusRuntimeException sre = (StatusRuntimeException) e;
-//
-//				// System.out.println("Exception status: " + sre.getStatus().toString());
-//				Metadata metadata = sre.getTrailers();
-//				ErrorInfo errInfo = metadata.get(ProtoUtils.keyForProto(ErrorInfo.getDefaultInstance()));
-//				if (errInfo != null)
-//					System.out.println("Exception metadata: " + errInfo.toString());
-//			}
-//			e.printStackTrace();
-//		}
-//		finally {
-//			channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-//		}
+		// read/write list of objects with streaming
+		iterations = new int[] {100};
+		for (int count : iterations) {
+			testGrpcMethod("getEmployeesStreaming", props.getThreadCount(),	count, 
+					() -> testGetEmployeesStreaming());
+
+			testGrpcMethod("createEmployeesStreaming", props.getThreadCount(), count, 
+					() -> testCreateEmployeesStreaming());
+		}
 	}
 	
 	private boolean isTestEnabled(String testName) {
@@ -191,7 +143,7 @@ public class GrpcClient {
 		}
 		
 		try {
-			latch.await(30, TimeUnit.SECONDS);
+			latch.await(120, TimeUnit.SECONDS);
 
 			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), execTimes);
 			testResults.add(testResult);
@@ -219,7 +171,7 @@ public class GrpcClient {
 	
 	private void testGetEmployeesList(int batchSize) {
 		List<Employee> empList = employeeClient.getEmployeesList(batchSize);
-//		logger.info("Get employee list: " + empList.toString());
+//		logger.info("get employee list: " + empList.toString());
 	}
 	
 	private void testCreateEmployeesList(int batchSize) {
@@ -227,8 +179,18 @@ public class GrpcClient {
 		for (int i=0; i<batchSize; i++)
 			empDTOList.add(sampleDataAsList.get(i));
 		
-		List<EmployeeID> idList = employeeClient.createEmployeesList(empDTOList);
+		List<CreateEmployeeResponse> listResponse = employeeClient.createEmployeesList(empDTOList);
 //		logger.info("created employee IDs: " + idList);
+	}
+	
+	private void testGetEmployeesStreaming() {
+		List<Employee> empList = employeeClient.getEmployeesStreaming();
+//		logger.info("get employee streaming - received: "+empList.size());
+	}
+	
+	private void testCreateEmployeesStreaming() {
+		List<CreateEmployeeResponse> listResponse = employeeClient.createEmployeesList(sampleDataAsList);
+//		logger.info("sent employees:" + sampleDataAsList.size() + " received IDs: " + listResponse.size());
 	}
 	
 	private void warmUp() {

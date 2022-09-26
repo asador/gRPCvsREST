@@ -17,15 +17,15 @@ service EmployeeGrpcService {
 
   // read/write single object 	
   rpc GetEmployee(EmployeeID) returns (Employee) {}
-  rpc CreateEmployee(Employee) returns (EmployeeID) {}
+  rpc CreateEmployee(Employee) returns (CreateEmployeeResponse) {}
   
   // read/write list of objects
   rpc GetEmployeesList(Count) returns (EmployeeList) {}
-  rpc CreateEmployeesList(EmployeeList) returns (EmployeeIDList) {}
+  rpc CreateEmployeesList(EmployeeList) returns (CreateEmployeeListResponse) {}
   
   // read/write objects with streaming
-//  rpc GetEmployeesStreaming(google.protobuf.Empty) returns (stream Employee) {}
-//  rpc CreatEmployeesStreaming(stream Employee) returns (stream CreateEmployeeResponse) {}
+  rpc GetEmployeesStreaming(google.protobuf.Empty) returns (stream Employee) {}
+  rpc CreatEmployeesStreaming(stream Employee) returns (stream CreateEmployeeResponse) {}
 }
 
 message EmployeeID {
@@ -54,17 +54,14 @@ message Address {
 	string zip_code = 4;
 }
 message Date {
-  // Year of the date. Must be from 1 to 9999, or 0 to specify a date without
-  // a year.
+  // Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.
   int32 year = 1;
 
-  // Month of a year. Must be from 1 to 12, or 0 to specify a year without a
-  // month and day.
+  // Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.
   int32 month = 2;
 
   // Day of a month. Must be from 1 to 31 and valid for the year and month, or 0
-  // to specify a year by itself or a year and month where the day isn't
-  // significant.
+  // to specify a year by itself or a year and month where the day isn't significant.
   int32 day = 3;
 }
 
@@ -72,9 +69,17 @@ message Count {
 	int32 count = 1;
 }
 
-message EmployeeIDList {
-	repeated EmployeeID employeeID = 1;
-}
 message EmployeeList {
 	repeated Employee employee = 1;
+}
+
+message CreateEmployeeResponse {
+	oneof message {
+		EmployeeID employeeId = 1;
+		google.rpc.Status errorStatus = 2;
+	}
+}
+
+message CreateEmployeeListResponse {
+	repeated CreateEmployeeResponse createResponse = 1;
 }
