@@ -143,7 +143,7 @@ public class GrpcClient {
 		}
 		
 		try {
-			latch.await(120, TimeUnit.SECONDS);
+			latch.await(props.getTestTimeoutSeconds(), TimeUnit.SECONDS);
 
 			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), execTimes);
 			testResults.add(testResult);

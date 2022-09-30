@@ -9,6 +9,7 @@ public class ApplicationProperties {
 	private static final String JAVA_LOGGING = "java.logging";
   
 	private static final String THREAD_COUNT = "test.numberOfThreads";
+	private static final String TEST_TIMEOUT = "test.timoutSeconds";
   private static final String OUTPUT_FILE_NAME = "test.outputFile";
   private static final String APPEND_TO_OUTPUT_FILE = "test.appendToOutputFile";
   
@@ -18,6 +19,7 @@ public class ApplicationProperties {
   private String javaLogging;
   
   private int threadCount;  
+  private int testTimeoutSeconds;
 	private String outputFileName;
 	private boolean appendToOutputFile;
 	
@@ -42,6 +44,7 @@ public class ApplicationProperties {
 			javaLogging = config.getProperty(JAVA_LOGGING);
 			
 			threadCount = Integer.valueOf(config.getProperty(THREAD_COUNT));
+			testTimeoutSeconds = Integer.valueOf(config.getProperty(TEST_TIMEOUT));
 			outputFileName = config.getProperty(OUTPUT_FILE_NAME);
 			appendToOutputFile = Boolean.valueOf(config.getProperty(APPEND_TO_OUTPUT_FILE));
 		}
@@ -68,6 +71,10 @@ public class ApplicationProperties {
 
 	public boolean isAppendToOutputFile() {
 		return appendToOutputFile;
+	}
+
+	public int getTestTimeoutSeconds() {
+		return testTimeoutSeconds;
 	}
 
 	public String getProperty(String key) {
