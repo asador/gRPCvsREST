@@ -15,8 +15,8 @@
   <name>grpc-client</name>
 
   <properties>
-    <maven.compiler.source>${jdk.version}</maven.compiler.source>
-    <maven.compiler.target>${jdk.version}</maven.compiler.target>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
   </properties>
 
   <dependencyManagement>
