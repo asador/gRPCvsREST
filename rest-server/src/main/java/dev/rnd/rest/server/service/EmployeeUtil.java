@@ -6,7 +6,12 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class EmployeeUtil {
+	
+	private static final Logger logger = LoggerFactory.getLogger(EmployeeUtil.class);
 
 	public static Employee csv2DTO(String recordCSV) {
 		String[] fields = recordCSV.split(",");
@@ -37,6 +42,7 @@ public class EmployeeUtil {
 		
 		Scanner scanner = new Scanner(EmployeeUtil.class.getClassLoader().getResourceAsStream(sampleDateFileName));
     scanner.nextLine();
+    int count = 0;
 		while (scanner.hasNextLine()) {
         Employee dto = EmployeeUtil.csv2DTO(scanner.nextLine());
 //        if (dataset.containsKey(dto.getEmpId()))
@@ -44,8 +50,11 @@ public class EmployeeUtil {
         while (dataset.containsKey(dto.getEmpId()))
         	dto.setEmpId(rnd.nextInt(10000000));
         dataset.put(dto.getEmpId(), dto);
+        
+        count++;
     }
 		scanner.close();
+		logger.info("Loaded " + count + " sample employee records");
 	}
 
 }

@@ -1,0 +1,59 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+	<groupId>dev.rnd</groupId>
+	<artifactId>gRPCvsREST</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <groupId>dev.rnd.rest</groupId>
+  <artifactId>rest-client</artifactId>
+  <packaging>jar</packaging>
+
+  <name>rest-client</name>
+
+  <properties>
+    <maven.compiler.source>${java.version}</maven.compiler.source>
+    <maven.compiler.target>${java.version}</maven.compiler.target>
+	<spring-boot-version>2.7.4</spring-boot-version>
+  </properties>
+
+  <dependencyManagement>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>dev.rnd.rest</groupId>
+      <artifactId>rest-server</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+	<dependency>
+	    <groupId>org.apache.httpcomponents</groupId>
+	    <artifactId>httpclient</artifactId>
+	    <version>4.5.13</version>
+	</dependency>    
+<!-- 
+	<dependency>
+	    <groupId>org.springframework.boot</groupId>
+	    <artifactId>spring-boot-starter-webflux</artifactId>
+	    <version>${spring-boot-version}</version>
+	</dependency>
+ -->	
+  </dependencies>
+  
+  <build>
+    <plugins>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.1.0</version>
+            <configuration>
+                <mainClass>dev.rnd.rest.client.RestClient</mainClass>
+            </configuration>
+        </plugin>
+    </plugins>
+  </build>  
+	
+</project>

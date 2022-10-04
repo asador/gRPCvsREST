@@ -12,9 +12,7 @@
     <module>grpc-server</module>
     <module>grpc-client</module>
     <module>rest-server</module>
-    <!-- 
     <module>rest-client</module>
-     -->
   </modules>
 
   <properties>    
