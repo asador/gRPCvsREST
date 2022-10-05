@@ -33,9 +33,6 @@ public class AppConfig {
 
 	@Bean
 	RestTemplate restTemplate(@Value("${rest.server.address}") String serverBaseUrl) {
-//		RestTemplate restTemplate = new RestTemplate();
-//		return restTemplate;
-		
 	  PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
 	  connectionManager.setMaxTotal(100);
 	  connectionManager.setDefaultMaxPerRoute(100);
@@ -45,13 +42,11 @@ public class AppConfig {
 	      .build();
 
 	  return new RestTemplateBuilder().rootUri(serverBaseUrl)
-	      .setConnectTimeout(Duration.ofMillis(1000))
-	      .setReadTimeout(Duration.ofMillis(1000))
+	      .setConnectTimeout(Duration.ofMillis(10000))
+	      .setReadTimeout(Duration.ofMillis(10000))
 	      .messageConverters(new StringHttpMessageConverter(), new MappingJackson2HttpMessageConverter())
 	      .requestFactory(() -> new HttpComponentsClientHttpRequestFactory(httpClient))
 	      .build();
-
 	}
-	
 
 }
