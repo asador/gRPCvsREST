@@ -14,17 +14,19 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.web.client.RestTemplate;
 
+import dev.rnd.rest.server.service.CreateEmployeeResponse;
 import dev.rnd.rest.server.service.Employee;
 import dev.rnd.rest.server.service.EmployeeUtil;
 
@@ -40,7 +42,11 @@ public class RestClient {
   private Random rnd = new Random(System.currentTimeMillis());
   private List<TestResult> testResults = new ArrayList<>();  
   
+  @Autowired
   private ExecutorService executor;
+  
+  @Autowired
+  private RestTemplate restTemplate;
   
   @Autowired
   private Environment env;
@@ -68,8 +74,6 @@ public class RestClient {
   	
   	EmployeeUtil.loadDataSet(SAMPLE_DATA_SET, sampleData);
   	sampleDataAsList.addAll(sampleData.values());
-  	
-//  	executor = Executors.newFixedThreadPool(threadCount);
   }
 
 	public static void main(String[] args) throws Exception { 
@@ -80,8 +84,9 @@ public class RestClient {
 		
   	if ("OFF".equalsIgnoreCase(client.javaLogging))
   		Logger.getLogger(RestClient.class.getPackageName()).setLevel(Level.OFF);
-  	
-  	client.executor = Executors.newFixedThreadPool(client.threadCount);
+
+		ch.qos.logback.classic.Logger logBackLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+  	logBackLogger.setLevel(ch.qos.logback.classic.Level.WARN);
   	
 		try {
 			client.runTests();
@@ -169,26 +174,37 @@ public class RestClient {
 	
 	private void testGetEmployeeByID() {
 		int idx = rnd.nextInt(employeeIDs.size());
+		Employee emp = restTemplate.getForObject("/employees/{id}", Employee.class, idx);
 //		logger.info(employee.toString());
 	}
 	
 	private void testCreateEmployee() {
-//		logger.info("create employee with ID: "+ empId);
+		int idx = rnd.nextInt(sampleDataAsList.size());
+		Employee emp = sampleDataAsList.get(idx);
+
+		CreateEmployeeResponse response = restTemplate.postForObject("/employees", emp, CreateEmployeeResponse.class);
+//		logger.info("create employee with ID: "+ response.getEmployeeId());
 	}
 	
 	private void testGetEmployeesList(int batchSize) {
-//		logger.info("get employee list: " + empList.toString());
+		List<Employee> empList = restTemplate.getForObject("/employees?count="+batchSize, List.class);
+//		logger.info("get employees list of size: " + empList.size());
 	}
 	
 	private void testCreateEmployeesList(int batchSize) {
-//		logger.info("created employee IDs: " + idList);
+		List<Employee> empList = new ArrayList<>();
+		for (int i=0; i<batchSize; i++)
+			empList.add(sampleDataAsList.get(i));
+		
+		List<CreateEmployeeResponse> listResponse = restTemplate.postForObject("/employees/bulk", empList, List.class);
+//		logger.info("created employee IDs: " + listResponse.size());
 	}
 	
 	
 	private void warmUp() {
 //		int count = employeeClient.getEmployeeCount();
-//		employeeIDs = employeeClient.getEmployeeIDs();
-//		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
+		employeeIDs = restTemplate.getForObject("/employees/:ids", List.class);
+		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
 	}
 	
 	private void saveTestResults() {

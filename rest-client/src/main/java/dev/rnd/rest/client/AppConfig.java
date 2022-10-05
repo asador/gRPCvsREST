@@ -1,6 +1,8 @@
 package dev.rnd.rest.client;
 
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -19,15 +21,10 @@ import org.springframework.web.client.RestTemplate;
 @PropertySource("classpath:application.properties")
 public class AppConfig {
 	
-	@Value("${rest.server.address}")
-	private String address;
-	
-//	@Bean
-//  public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
-//    PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer = new PropertySourcesPlaceholderConfigurer();
-//    propertySourcesPlaceholderConfigurer.setLocations(new ClassPathResource("application.properties"));
-//    return propertySourcesPlaceholderConfigurer;
-//  }
+	@Bean
+	ExecutorService executorService(@Value("${test.numberOfThreads}") int threadCount) {
+		return Executors.newFixedThreadPool(threadCount);
+	}
 	
 	@Bean
 	RestClient restClient() {
