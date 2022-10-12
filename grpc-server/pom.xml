@@ -17,6 +17,8 @@
   <properties>    
     <maven.compiler.source>${java.version}</maven.compiler.source>
     <maven.compiler.target>${java.version}</maven.compiler.target>
+    <main.class>dev.rnd.grpc.server.GrpcServer</main.class>
+    <spring-boot-version>2.7.4</spring-boot-version>
   </properties>
 
   <dependencyManagement>
@@ -136,9 +138,15 @@
           <artifactId>exec-maven-plugin</artifactId>
           <version>3.1.0</version>
           <configuration>
-              <mainClass>dev.rnd.grpc.server.GrpcServer</mainClass>
+              <mainClass>${main.class}</mainClass>
           </configuration>
       </plugin>
+	  <plugin>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-maven-plugin</artifactId>
+	    <version>${spring-boot-version}</version>
+	  </plugin>
+      
     </plugins>
   </build>
   
