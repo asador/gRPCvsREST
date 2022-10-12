@@ -82,8 +82,8 @@ public class EmployeeGrpcClient {
 		return createListResponse.getCreateResponseList();
 	}
 
-	public List<Employee> getEmployeesStreaming() {
-		Iterator<Employee> iterator = blockingStub.getEmployeesStreaming(Empty.newBuilder().build());
+	public List<Employee> getEmployeesStreaming(int count) {
+		Iterator<Employee> iterator = blockingStub.getEmployeesStreaming(Count.newBuilder().setCount(count).build());
 		List<Employee> empList = new ArrayList<>();
 		while (iterator.hasNext())
 			empList.add(iterator.next());
@@ -91,7 +91,7 @@ public class EmployeeGrpcClient {
 		return empList;
 	}
 
-	public List<CreateEmployeeResponse> createEmployeesStreaming(List<EmployeeDTO> empList) {
+	public List<CreateEmployeeResponse> createEmployeesStreaming(List<EmployeeDTO> empList, int count) {
   	final CountDownLatch finishLatch = new CountDownLatch(1);
   	final List<CreateEmployeeResponse> empIDs = new ArrayList<>();
   	
@@ -120,6 +120,9 @@ public class EmployeeGrpcClient {
 			if (finishLatch.getCount() == 0)
 				break;
 			requestObserver.onNext(EmployeeUtil.dto2EmployeeProto(dto));
+			
+			if (--count == 0)
+				break;
 		}
 		requestObserver.onCompleted();
 		

@@ -24,7 +24,7 @@ service EmployeeGrpcService {
   rpc CreateEmployeesList(EmployeeList) returns (CreateEmployeeListResponse) {}
   
   // read/write objects with streaming
-  rpc GetEmployeesStreaming(google.protobuf.Empty) returns (stream Employee) {}
+  rpc GetEmployeesStreaming(Count) returns (stream Employee) {}
   rpc CreatEmployeesStreaming(stream Employee) returns (stream CreateEmployeeResponse) {}
 }
 

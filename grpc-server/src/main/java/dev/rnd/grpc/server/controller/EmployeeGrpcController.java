@@ -127,11 +127,15 @@ public class EmployeeGrpcController extends EmployeeGrpcServiceImplBase {
 	}
 
 	@Override
-	public void getEmployeesStreaming(Empty request, StreamObserver<Employee> responseObserver) {
+	public void getEmployeesStreaming(Count request, StreamObserver<Employee> responseObserver) {
 		Collection<EmployeeDTO> emps = employeeService.getEmployees();
 
+		int count = request.getCount();
 		for (EmployeeDTO dto : emps) {
 			responseObserver.onNext(EmployeeUtil.dto2EmployeeProto(dto));
+			count--;
+			if (count == 0)
+				break;
 		}
 
 		responseObserver.onCompleted();

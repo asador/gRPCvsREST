@@ -99,12 +99,13 @@ public class GrpcClient {
 		
 		// read/write list of objects with streaming
 		iterations = new int[] {100};
+		int numRecords = 1000;
 		for (int count : iterations) {
 			testGrpcMethod("getEmployeesStreaming", props.getThreadCount(),	count, 
-					() -> testGetEmployeesStreaming());
+					() -> testGetEmployeesStreaming(numRecords));
 
 			testGrpcMethod("createEmployeesStreaming", props.getThreadCount(), count, 
-					() -> testCreateEmployeesStreaming());
+					() -> testCreateEmployeesStreaming(numRecords));
 		}
 	}
 	
@@ -183,13 +184,13 @@ public class GrpcClient {
 //		logger.info("created employee IDs: " + idList);
 	}
 	
-	private void testGetEmployeesStreaming() {
-		List<Employee> empList = employeeClient.getEmployeesStreaming();
+	private void testGetEmployeesStreaming(int count) {
+		List<Employee> empList = employeeClient.getEmployeesStreaming(count);
 //		logger.info("get employee streaming - received: "+empList.size());
 	}
 	
-	private void testCreateEmployeesStreaming() {
-		List<CreateEmployeeResponse> listResponse = employeeClient.createEmployeesList(sampleDataAsList);
+	private void testCreateEmployeesStreaming(int count) {
+		List<CreateEmployeeResponse> listResponse = employeeClient.createEmployeesStreaming(sampleDataAsList, count);
 //		logger.info("sent employees:" + sampleDataAsList.size() + " received IDs: " + listResponse.size());
 	}
 	
