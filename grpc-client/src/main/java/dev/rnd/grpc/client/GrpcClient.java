@@ -98,15 +98,16 @@ public class GrpcClient {
 			}
 		
 		// read/write list of objects with streaming
-		iterations = new int[] {100};
-		int numRecords = 1000;
-		for (int count : iterations) {
-			testGrpcMethod("getEmployeesStreaming", props.getThreadCount(),	count, 
-					() -> testGetEmployeesStreaming(numRecords));
-
-			testGrpcMethod("createEmployeesStreaming", props.getThreadCount(), count, 
-					() -> testCreateEmployeesStreaming(numRecords));
-		}
+		iterations = new int[] {200};
+		int[] numRecords = {100, 1000};
+		for (int count : iterations) 
+			for (int numRec: numRecords) {
+				testGrpcMethod("getEmployeesStreaming-"+numRec, props.getThreadCount(),	count, 
+						() -> testGetEmployeesStreaming(numRec));
+	
+				testGrpcMethod("createEmployeesStreaming-"+numRec, props.getThreadCount(), count, 
+						() -> testCreateEmployeesStreaming(numRec));
+			}
 	}
 	
 	private boolean isTestEnabled(String testName) {
