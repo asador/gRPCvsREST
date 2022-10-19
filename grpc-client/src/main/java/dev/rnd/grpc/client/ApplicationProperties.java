@@ -39,6 +39,7 @@ public class ApplicationProperties {
 				ApplicationProperties.class.getClassLoader().getResourceAsStream("application.properties")) {
 			
 			config.load(input);
+			config.putAll(System.getProperties());
 			
 			serverAddress = config.getProperty(SERVER_ADDRESS);
 			javaLogging = config.getProperty(JAVA_LOGGING);
