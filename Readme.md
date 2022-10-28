@@ -5,6 +5,8 @@ This project contains 4 modules to compare performance of gRPC vs. REST calls. T
 
 The test scenarios include reading and writing of a single `Employee` object and a list of 10, 100, and 1000 objects. The average size of `Employee` is ~130 and ~310 bytes in protobuf and JSON respectively. 
 
+Both gRPC and REST servers are being initialized with 10000 random sample records. This data will be retrieved by clients as individual records or in a batch of different sizes. Clients are also initialized with 2000 sample records used for uploading to the servers.    
+
 ## grpc-server ##
 
 **Build:**
