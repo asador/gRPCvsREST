@@ -19,15 +19,20 @@ public class TestResult {
 	private long maxExecTime;
 	private long p95ExecTime;
 	private long p98ExecTime;
+	private long duration;
+	private long avgThroughputPerSec;
 	
-	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage";
+	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage,duration,throughput";
 	
-	public TestResult(String testName, int threadCount, int iterationCount, int errors, List<Long> execTimes) {
+	public TestResult(String testName, int threadCount, int iterationCount, int errors, long duration, List<Long> execTimes) {
 		executionTime = LocalDateTime.now();
 		this.testName = testName;
 		this.threadCount = threadCount;
 		this.iterationCountPerThread = iterationCount;
 		this.errorCount = errors;
+		this.duration = duration;
+		avgThroughputPerSec = execTimes.size() * 1000 / duration;
+		
 		calcStats(execTimes);
 	}
 	
@@ -95,6 +100,11 @@ public class TestResult {
 		csv.append(',');
 		
 		csv.append(getErrorsPercentage());
+		csv.append(',');
+		
+		csv.append(duration);
+		csv.append(',');
+		csv.append(avgThroughputPerSec);
 		
 		return csv.toString();
 	}

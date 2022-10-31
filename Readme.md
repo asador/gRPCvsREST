@@ -3,7 +3,7 @@ gRPC vs REST Performance Comparison
 
 This project contains 4 modules to compare performance of gRPC vs. REST calls. The clients and servers contain no business logic and logging is disabled to help focus on the performance difference of gRPC or REST calls between parties. gRPC and REST calls include Java object to protobuf or JSON conversion back and forth as well as the underlying http communications. The tests are on plain http without TLS.
 
-The test scenarios include reading and writing of a single `Employee` object and a list of 10, 100, and 1000 objects. The average size of `Employee` is ~130 and ~310 bytes in protobuf and JSON respectively. 
+The test scenarios include reading and writing of a single `Employee` object and a list of 10, 100, and 1000 objects. The average size of `Employee` is ~130 and ~310 bytes in protobuf and JSON respectively when serialized on the wire. 
 
 Both gRPC and REST servers are being initialized with 10000 random sample records. This data will be retrieved by clients as individual records or in a batch of different sizes. Clients are also initialized with 2000 sample records used for uploading to the servers.    
 

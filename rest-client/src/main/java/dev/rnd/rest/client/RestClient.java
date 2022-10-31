@@ -7,7 +7,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,8 +59,8 @@ public class RestClient {
   @Value("${test.numberOfThreads}")
   private int threadCount;  
   
-  @Value("${test.timoutSeconds}")
-  private int testTimeoutSeconds;
+//  @Value("${test.timoutSeconds}")
+//  private int testTimeoutSeconds;
   
   @Value("${test.outputFile}")
 	private String outputFileName;
@@ -111,7 +110,6 @@ public class RestClient {
 		}
 		
 		// batch/list of objects read/write
-		iterations = new int[] {1000};
 		int[] batchSizes = new int[] {10, 100, 1000};
 		for (int count : iterations)
 			for (int batch : batchSizes) {
@@ -122,7 +120,6 @@ public class RestClient {
 				testRestMethod("createEmployeesList-"+batch, threadCount, count, 
 						() -> testCreateEmployeesList(batch));			
 			}
-		
 	}
 	
 	private boolean isTestEnabled(String testName) {
@@ -137,10 +134,14 @@ public class RestClient {
 		}
 					
 		CountDownLatch latch = new CountDownLatch(nThreads);
-		List<Long> execTimes = Collections.synchronizedList(new ArrayList<>());
+		List<List<Long>> execTimesList = new ArrayList<>();		
 		AtomicInteger errorCount = new AtomicInteger(0);
 		
+		long start = System.currentTimeMillis();
 		for (int i=0; i< nThreads; i++) {
+			List<Long> execTimes = new ArrayList<>();
+			execTimesList.add(execTimes);
+			
 			executor.execute(() -> {
 				for (int j=0; j < iterationCount; j++) {
 					long t1 = System.nanoTime();
@@ -160,12 +161,20 @@ public class RestClient {
 		}
 		
 		try {
-			latch.await(testTimeoutSeconds, TimeUnit.SECONDS);
+//			latch.await(testTimeoutSeconds, TimeUnit.SECONDS);
+			latch.await();
 
-			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), execTimes);
+			long duration = System.currentTimeMillis() - start;
+			
+			// merge all exec times form all threads
+			List<Long> allExecTimes = new ArrayList<>();			
+			for (int i=0; i<nThreads; i++)
+				allExecTimes.addAll(execTimesList.get(i));
+			
+			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, allExecTimes);
 			testResults.add(testResult);
 
-			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
+			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}, collectedSamples={3}", new Object[] {testName, nThreads, iterationCount, allExecTimes.size()});
 		}
 		catch (InterruptedException e) {
 			e.printStackTrace();
