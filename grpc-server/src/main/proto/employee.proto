@@ -29,15 +29,15 @@ service EmployeeGrpcService {
 }
 
 message EmployeeID {
-	int32 empId = 1;
+	int32 emp_id = 1;
 }
 
 message Employee {
- 	int32 empId = 1;
+ 	int32 emp_id = 1;
  	string first_name = 2;
  	string last_name = 3;
- 	int32 departmentId = 4;
- 	int32 managerId = 5;
+ 	int32 department_id = 4;
+ 	int32 manager_id = 5;
  	string title = 6;
  	string email = 7;
  	 
