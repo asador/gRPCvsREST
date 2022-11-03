@@ -9,6 +9,7 @@
   <name>gRPCvsREST</name>
 
   <modules>
+    <module>grpc-rest-util</module>
     <module>grpc-server</module>
     <module>grpc-client</module>
     <module>rest-server</module>

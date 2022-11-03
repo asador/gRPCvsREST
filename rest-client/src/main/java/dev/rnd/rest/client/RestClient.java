@@ -28,6 +28,8 @@ import org.springframework.web.client.RestTemplate;
 import dev.rnd.rest.server.service.CreateEmployeeResponse;
 import dev.rnd.rest.server.service.Employee;
 import dev.rnd.rest.server.service.EmployeeUtil;
+import dev.rnd.util.CpuTimeCalculator;
+import dev.rnd.util.TestResult;
 
 public class RestClient {
 
@@ -137,6 +139,9 @@ public class RestClient {
 		List<List<Long>> execTimesList = new ArrayList<>();		
 		AtomicInteger errorCount = new AtomicInteger(0);
 		
+		long serverCpuTimeStart = getServerCpuTime();
+		long clientCpuTimeStart = CpuTimeCalculator.getTotalCpuTime();
+		
 		long start = System.currentTimeMillis();
 		for (int i=0; i< nThreads; i++) {
 			List<Long> execTimes = new ArrayList<>();
@@ -165,22 +170,29 @@ public class RestClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
+			long clientCpuTime = CpuTimeCalculator.getTotalCpuTime() - clientCpuTimeStart;
+			long serverCpuTime = getServerCpuTime() - serverCpuTimeStart;
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
 			for (int i=0; i<nThreads; i++)
 				allExecTimes.addAll(execTimesList.get(i));
 			
-			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, allExecTimes);
+			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, 
+					allExecTimes, serverCpuTime, clientCpuTime);
 			testResults.add(testResult);
 
-			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}, collectedSamples={3}", new Object[] {testName, nThreads, iterationCount, allExecTimes.size()});
+			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
 		}
 		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
 	
+	private long getServerCpuTime() {
+		return restTemplate.getForObject("/threads/cpuTime", Long.class);
+	}
+
 	private void testGetEmployeeByID() {
 		int idx = rnd.nextInt(employeeIDs.size());
 		Employee emp = restTemplate.getForObject("/employees/{id}", Employee.class, idx);

@@ -1,4 +1,4 @@
-package dev.rnd.grpc.client;
+package dev.rnd.util;
 
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -22,9 +22,12 @@ public class TestResult {
 	private long duration;
 	private long avgThroughputPerSec;
 	
-	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage,duration,throughput";
+	private long serverCpuTime;
+	private long clientCpuTime;
 	
-	public TestResult(String testName, int threadCount, int iterationCount, int errors, long duration, List<Long> execTimes) {
+	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage,duration,throughput,serverCpuTime,clientCpuTime";
+	
+	public TestResult(String testName, int threadCount, int iterationCount, int errors, long duration, List<Long> execTimes, long serverCpuTime, long clientCpuTime) {
 		executionTime = LocalDateTime.now();
 		this.testName = testName;
 		this.threadCount = threadCount;
@@ -32,6 +35,9 @@ public class TestResult {
 		this.errorCount = errors;
 		this.duration = duration;
 		avgThroughputPerSec = execTimes.size() * 1000 / duration;
+		
+		this.serverCpuTime = serverCpuTime;
+		this.clientCpuTime = clientCpuTime;
 		
 		calcStats(execTimes);
 	}
@@ -105,7 +111,12 @@ public class TestResult {
 		csv.append(duration);
 		csv.append(',');
 		csv.append(avgThroughputPerSec);
-		
+		csv.append(',');
+
+		csv.append(serverCpuTime);
+		csv.append(',');
+		csv.append(clientCpuTime);
+
 		return csv.toString();
 	}
 	

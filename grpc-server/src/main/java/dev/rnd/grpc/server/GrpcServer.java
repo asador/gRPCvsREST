@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import dev.rnd.grpc.server.controller.EmployeeGrpcController;
+import dev.rnd.grpc.server.controller.SystemGrpcController;
 import dev.rnd.grpc.server.service.EmployeeService;
 import io.grpc.BindableService;
 import io.grpc.Server;
@@ -38,6 +39,7 @@ public class GrpcServer
 
     server = serverBuilder
     		.addService(employeeGrpcService)
+    		.addService(new SystemGrpcController())
     		.addService(ProtoReflectionService.newInstance()) // for service method discovery by client test tools
         .build();
   }

@@ -19,10 +19,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.google.protobuf.Empty;
+
 import dev.rnd.grpc.employee.CreateEmployeeResponse;
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
+import dev.rnd.grpc.system.SystemGrpcServiceGrpc;
+import dev.rnd.grpc.system.SystemGrpcServiceGrpc.SystemGrpcServiceBlockingStub;
+import dev.rnd.util.CpuTimeCalculator;
+import dev.rnd.util.TestResult;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
@@ -35,6 +41,7 @@ public class GrpcClient {
   private ApplicationProperties props;
   private ManagedChannel channel;
   private EmployeeGrpcClient employeeClient;
+  private SystemGrpcServiceBlockingStub systemBlockingStub;
   private ExecutorService executor;
   
   private Map<Integer, EmployeeDTO> sampleData = new HashMap<>();
@@ -55,6 +62,7 @@ public class GrpcClient {
   	
   	channel = Grpc.newChannelBuilder(props.getServerAddress(), InsecureChannelCredentials.create()).build();
   	employeeClient = new EmployeeGrpcClient(channel);
+  	systemBlockingStub = SystemGrpcServiceGrpc.newBlockingStub(channel);
   	
   	executor = Executors.newFixedThreadPool(props.getThreadCount());
   }
@@ -123,6 +131,9 @@ public class GrpcClient {
 		List<List<Long>> execTimesList = new ArrayList<>();		
 		AtomicInteger errorCount = new AtomicInteger(0);
 
+		long serverCpuTimeStart = getServerCpuTime();
+		long clientCpuTimeStart = CpuTimeCalculator.getTotalCpuTime();
+		
 		long start = System.currentTimeMillis();
 		
 		for (int i=0; i< nThreads; i++) {
@@ -152,13 +163,16 @@ public class GrpcClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
+			long clientCpuTime = CpuTimeCalculator.getTotalCpuTime() - clientCpuTimeStart;
+			long serverCpuTime = getServerCpuTime() - serverCpuTimeStart;
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
 			for (int i=0; i<nThreads; i++)
 				allExecTimes.addAll(execTimesList.get(i));
 
-			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, allExecTimes);
+			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, 
+					allExecTimes, serverCpuTime, clientCpuTime);
 			testResults.add(testResult);
 
 			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
@@ -168,6 +182,10 @@ public class GrpcClient {
 		}
 	}
 	
+	private long getServerCpuTime() {
+		return systemBlockingStub.getCputTime(Empty.newBuilder().build()).getNum();
+	}
+
 	private void testGetEmployeeByID() {
 		int idx = rnd.nextInt(employeeIDs.size());
 		employeeClient.getEmployee(employeeIDs.get(idx));
