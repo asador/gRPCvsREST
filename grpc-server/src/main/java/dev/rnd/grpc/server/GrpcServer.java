@@ -39,7 +39,7 @@ public class GrpcServer
 
     server = serverBuilder
     		.addService(employeeGrpcService)
-    		.addService(new SystemGrpcController())
+    		.addService(new SystemGrpcController(Integer.valueOf(config.getProperty("cpuTimeSampleIntervalMillisec"))))
     		.addService(ProtoReflectionService.newInstance()) // for service method discovery by client test tools
         .build();
   }
@@ -50,6 +50,7 @@ public class GrpcServer
   			GrpcServer.class.getClassLoader().getResourceAsStream("application.properties")) {
 
 			config.load(input);
+			config.putAll(System.getProperties());
 		}
 		catch (IOException e) {
 			e.printStackTrace();

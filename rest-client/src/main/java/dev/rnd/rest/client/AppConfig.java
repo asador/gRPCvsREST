@@ -17,6 +17,8 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
+import dev.rnd.util.CpuTimeCalculator;
+
 @Configuration
 @PropertySource("classpath:application.properties")
 public class AppConfig {
@@ -24,6 +26,11 @@ public class AppConfig {
 	@Bean
 	ExecutorService executorService(@Value("${test.numberOfThreads}") int threadCount) {
 		return Executors.newFixedThreadPool(threadCount);
+	}
+	
+	@Bean
+	public CpuTimeCalculator cpuTimeCalculator(@Value("${cpuTimeSampleIntervalMillisec}") int interval) {
+		return new CpuTimeCalculator(interval);
 	}
 	
 	@Bean

@@ -7,6 +7,7 @@ import java.util.Properties;
 public class ApplicationProperties {
 	private static final String SERVER_ADDRESS = "grpc.server.address";
 	private static final String JAVA_LOGGING = "java.logging";
+	private static final String CPU_TIME_SAMPLE_INTERVAL_MS = "cpuTimeSampleIntervalMillisec";
   
 	private static final String THREAD_COUNT = "test.numberOfThreads";
 	private static final String TEST_TIMEOUT = "test.timoutSeconds";
@@ -17,6 +18,7 @@ public class ApplicationProperties {
   
 	private String serverAddress;
   private String javaLogging;
+  private int cpuTimeInterval;
   
   private int threadCount;  
 //  private int testTimeoutSeconds;
@@ -43,6 +45,7 @@ public class ApplicationProperties {
 			
 			serverAddress = config.getProperty(SERVER_ADDRESS);
 			javaLogging = config.getProperty(JAVA_LOGGING);
+			cpuTimeInterval = Integer.valueOf(config.getProperty(CPU_TIME_SAMPLE_INTERVAL_MS));
 			
 			threadCount = Integer.valueOf(config.getProperty(THREAD_COUNT));
 //			testTimeoutSeconds = Integer.valueOf(config.getProperty(TEST_TIMEOUT));
@@ -74,9 +77,9 @@ public class ApplicationProperties {
 		return appendToOutputFile;
 	}
 
-//	public int getTestTimeoutSeconds() {
-//		return testTimeoutSeconds;
-//	}
+	public int getCpuTimeInterval() {
+		return cpuTimeInterval;
+	}
 
 	public String getProperty(String key) {
 		return config.getProperty(key);

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import dev.rnd.rest.server.service.EmployeeService;
+import dev.rnd.util.CpuTimeCalculator;
 
 @Configuration
 public class ServerConfig {
@@ -17,5 +18,10 @@ public class ServerConfig {
 		empService.loadDataSet(sampleDataset);
 		
 		return empService;
+	}
+	
+	@Bean
+	public CpuTimeCalculator cpuTimeCalculator(@Value("${cpuTimeSampleIntervalMillisec}") int interval) {
+		return new CpuTimeCalculator(interval);
 	}
 }

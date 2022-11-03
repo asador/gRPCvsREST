@@ -48,6 +48,9 @@ public class RestClient {
   
   @Autowired
   private RestTemplate restTemplate;
+
+  @Autowired
+  private CpuTimeCalculator cpuTimeCalculator;
   
   @Autowired
   private Environment env;
@@ -59,10 +62,7 @@ public class RestClient {
   private String javaLogging;
   
   @Value("${test.numberOfThreads}")
-  private int threadCount;  
-  
-//  @Value("${test.timoutSeconds}")
-//  private int testTimeoutSeconds;
+  private int threadCount; 
   
   @Value("${test.outputFile}")
 	private String outputFileName;
@@ -139,8 +139,8 @@ public class RestClient {
 		List<List<Long>> execTimesList = new ArrayList<>();		
 		AtomicInteger errorCount = new AtomicInteger(0);
 		
-		long serverCpuTimeStart = getServerCpuTime();
-		long clientCpuTimeStart = CpuTimeCalculator.getTotalCpuTime();
+		startServerCpuTime();
+		cpuTimeCalculator.start();
 		
 		long start = System.currentTimeMillis();
 		for (int i=0; i< nThreads; i++) {
@@ -170,8 +170,11 @@ public class RestClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
-			long clientCpuTime = CpuTimeCalculator.getTotalCpuTime() - clientCpuTimeStart;
-			long serverCpuTime = getServerCpuTime() - serverCpuTimeStart;
+			cpuTimeCalculator.stop();
+			stopServerCpuTime();
+			
+			long clientCpuTime = cpuTimeCalculator.getTotalCpuTime();
+			long serverCpuTime = getServerCpuTime();
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
@@ -189,8 +192,14 @@ public class RestClient {
 		}
 	}
 	
+	private void startServerCpuTime() {
+		restTemplate.headForHeaders("/cpuTime/start");
+	}
+	private void stopServerCpuTime() {
+		restTemplate.headForHeaders("/cpuTime/stop");
+	}	
 	private long getServerCpuTime() {
-		return restTemplate.getForObject("/threads/cpuTime", Long.class);
+		return restTemplate.getForObject("/cpuTime/value", Long.class);
 	}
 
 	private void testGetEmployeeByID() {

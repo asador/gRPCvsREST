@@ -50,6 +50,7 @@ public class GrpcClient {
   
   private Random rnd = new Random(System.currentTimeMillis());
   private List<TestResult> testResults = new ArrayList<>();  
+  private CpuTimeCalculator cpuTimeClaculator;
 
   GrpcClient() {
   	props = ApplicationProperties.getAppProperties();
@@ -65,6 +66,8 @@ public class GrpcClient {
   	systemBlockingStub = SystemGrpcServiceGrpc.newBlockingStub(channel);
   	
   	executor = Executors.newFixedThreadPool(props.getThreadCount());
+  	
+  	cpuTimeClaculator = new CpuTimeCalculator(props.getCpuTimeInterval());
   }
 
 	public static void main(String[] args) throws Exception{
@@ -131,8 +134,8 @@ public class GrpcClient {
 		List<List<Long>> execTimesList = new ArrayList<>();		
 		AtomicInteger errorCount = new AtomicInteger(0);
 
-		long serverCpuTimeStart = getServerCpuTime();
-		long clientCpuTimeStart = CpuTimeCalculator.getTotalCpuTime();
+		startServerCpuTime();		
+		cpuTimeClaculator.start();
 		
 		long start = System.currentTimeMillis();
 		
@@ -163,8 +166,11 @@ public class GrpcClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
-			long clientCpuTime = CpuTimeCalculator.getTotalCpuTime() - clientCpuTimeStart;
-			long serverCpuTime = getServerCpuTime() - serverCpuTimeStart;
+			cpuTimeClaculator.stop();
+			stopServerCpuTime();
+			
+			long clientCpuTime = cpuTimeClaculator.getTotalCpuTime();
+			long serverCpuTime = getServerCpuTime();
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
@@ -182,8 +188,14 @@ public class GrpcClient {
 		}
 	}
 	
+	private void startServerCpuTime() {
+		systemBlockingStub.startCpuTimeMeasurement(Empty.newBuilder().build());
+	}
+	private void stopServerCpuTime() {
+		systemBlockingStub.stopCpuTimeMeasurement(Empty.newBuilder().build());
+	}
 	private long getServerCpuTime() {
-		return systemBlockingStub.getCputTime(Empty.newBuilder().build()).getNum();
+		return systemBlockingStub.getCpuTime(Empty.newBuilder().build()).getNum();
 	}
 
 	private void testGetEmployeeByID() {
