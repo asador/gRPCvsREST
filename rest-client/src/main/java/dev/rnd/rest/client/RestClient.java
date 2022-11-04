@@ -170,11 +170,9 @@ public class RestClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
-			cpuTimeCalculator.stop();
-			stopServerCpuTime();
 			
-			long clientCpuTime = cpuTimeCalculator.getTotalCpuTime();
-			long serverCpuTime = getServerCpuTime();
+			long clientCpuTime = cpuTimeCalculator.stopAndGetTotalCpuTime();
+			long serverCpuTime = stopAndGetServerCpuTime();
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
@@ -195,11 +193,8 @@ public class RestClient {
 	private void startServerCpuTime() {
 		restTemplate.headForHeaders("/cpuTime/start");
 	}
-	private void stopServerCpuTime() {
-		restTemplate.headForHeaders("/cpuTime/stop");
-	}	
-	private long getServerCpuTime() {
-		return restTemplate.getForObject("/cpuTime/value", Long.class);
+	private long stopAndGetServerCpuTime() {
+		return restTemplate.getForObject("/cpuTime/stopAndGet", Long.class);
 	}
 
 	private void testGetEmployeeByID() {

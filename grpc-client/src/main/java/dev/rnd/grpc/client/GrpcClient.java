@@ -166,11 +166,9 @@ public class GrpcClient {
 			latch.await();
 
 			long duration = System.currentTimeMillis() - start;
-			cpuTimeClaculator.stop();
-			stopServerCpuTime();
 			
-			long clientCpuTime = cpuTimeClaculator.getTotalCpuTime();
-			long serverCpuTime = getServerCpuTime();
+			long clientCpuTime = cpuTimeClaculator.stopAndGetTotalCpuTime();
+			long serverCpuTime = stopAndGetServerCpuTime();
 			
 			// merge all exec times form all threads
 			List<Long> allExecTimes = new ArrayList<>();			
@@ -191,11 +189,8 @@ public class GrpcClient {
 	private void startServerCpuTime() {
 		systemBlockingStub.startCpuTimeMeasurement(Empty.newBuilder().build());
 	}
-	private void stopServerCpuTime() {
-		systemBlockingStub.stopCpuTimeMeasurement(Empty.newBuilder().build());
-	}
-	private long getServerCpuTime() {
-		return systemBlockingStub.getCpuTime(Empty.newBuilder().build()).getNum();
+	private long stopAndGetServerCpuTime() {
+		return systemBlockingStub.stopAndGetCpuTime(Empty.newBuilder().build()).getNum();
 	}
 
 	private void testGetEmployeeByID() {
