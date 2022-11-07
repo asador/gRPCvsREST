@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "dev.rnd.grpc.system";
+option java_outer_classname = "SystemProto";
+
+package system;
+
+import "google/protobuf/empty.proto";
+
+service SystemGrpcService {
+
+  rpc GetThreadCount(google.protobuf.Empty) returns (Number) {}
+  rpc StartCpuUsageMonitor(google.protobuf.Empty) returns (google.protobuf.Empty) {} 
+  rpc StopAndGetCpuUsage(google.protobuf.Empty) returns (CpuUsageProto) {} 
+
+}
+
+message Number {
+	int64 num = 1;
+}
+
+message CpuUsageProto {
+	int64 duration = 1;
+	int64 total_cpu_time = 2;
+	double utilization = 3;
+}
+

@@ -1,20 +1,10 @@
 package dev.rnd.rest.client;
 
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,10 +18,10 @@ import org.springframework.web.client.RestTemplate;
 import dev.rnd.rest.server.service.CreateEmployeeResponse;
 import dev.rnd.rest.server.service.Employee;
 import dev.rnd.rest.server.service.EmployeeUtil;
-import dev.rnd.util.CpuTimeCalculator;
-import dev.rnd.util.TestResult;
+import dev.rnd.util.CpuUsage;
+import dev.rnd.util.TestClient;
 
-public class RestClient {
+public class RestClient extends TestClient {
 
   private static final Logger logger = Logger.getLogger(RestClient.class.getName());
   private static final String SAMPLE_DATA_SET = "sampleEmployeeData.csv";
@@ -41,17 +31,10 @@ public class RestClient {
   private List<Integer> employeeIDs;
   
   private Random rnd = new Random(System.currentTimeMillis());
-  private List<TestResult> testResults = new ArrayList<>();  
-  
-  @Autowired
-  private ExecutorService executor;
   
   @Autowired
   private RestTemplate restTemplate;
-
-  @Autowired
-  private CpuTimeCalculator cpuTimeCalculator;
-  
+ 
   @Autowired
   private Environment env;
   
@@ -69,6 +52,9 @@ public class RestClient {
   
   @Value("${test.appendToOutputFile}")
 	private boolean appendToOutputFile;
+  
+  @Value("${cpuTimeSampleIntervalMillisec}")
+  private int cputTimeSamplingInterval;
 
 
   RestClient() {
@@ -98,16 +84,43 @@ public class RestClient {
 		}
 	}
 
+	@Override
+	protected String getProperty(String key) {
+		return env.getProperty(key);
+	}
+
+	@Override
+	protected int getThreadCount() {
+		return threadCount;
+	}
+
+	@Override
+	protected int getCpuTimeSampleInterval() {
+		return cputTimeSamplingInterval;
+	}
+
+	@Override
+	protected String getOutputFilename() {
+		return outputFileName;
+	}
+
+	@Override
+	protected boolean isAppendToOutputFile() {
+		return appendToOutputFile;
+	}
+
 	private void runTests() {
+		preTestRun();
+		
 		warmUp();
 		
 		// single object read/write
 		int[] iterations = new int[] {10000};
 		for (int count : iterations) {
-			testRestMethod("getEmployeeByID", threadCount,	count, 
+			testRemoteMethod("getEmployeeByID", threadCount,	count, 
 					() -> testGetEmployeeByID());
 
-			testRestMethod("createEmployee", threadCount, count, 
+			testRemoteMethod("createEmployee", threadCount, count, 
 					() -> testCreateEmployee());
 		}
 		
@@ -116,85 +129,21 @@ public class RestClient {
 		for (int count : iterations)
 			for (int batch : batchSizes) {
 		
-				testRestMethod("getEmployeesList-"+batch, threadCount, count, 
+				testRemoteMethod("getEmployeesList-"+batch, threadCount, count, 
 						() -> testGetEmployeesList(batch));
 				
-				testRestMethod("createEmployeesList-"+batch, threadCount, count, 
+				testRemoteMethod("createEmployeesList-"+batch, threadCount, count, 
 						() -> testCreateEmployeesList(batch));			
 			}
 	}
 	
-	private boolean isTestEnabled(String testName) {
-		String testKey = "test." + testName;
-		return env.getProperty(testKey) == null || Boolean.valueOf(env.getProperty(testKey));
+	@Override
+	protected void startServerCpuUsageMonitor() {
+		restTemplate.headForHeaders("/cpuUsage/start");
 	}
-	
-	private void testRestMethod(String testName, int nThreads, int iterationCount, Runnable test) {
-		if (!isTestEnabled(testName)) {
-			logger.log(Level.INFO, "Skipped test {0}", testName);
-			return;
-		}
-					
-		CountDownLatch latch = new CountDownLatch(nThreads);
-		List<List<Long>> execTimesList = new ArrayList<>();		
-		AtomicInteger errorCount = new AtomicInteger(0);
-		
-		startServerCpuTime();
-		cpuTimeCalculator.start();
-		
-		long start = System.currentTimeMillis();
-		for (int i=0; i< nThreads; i++) {
-			List<Long> execTimes = new ArrayList<>();
-			execTimesList.add(execTimes);
-			
-			executor.execute(() -> {
-				for (int j=0; j < iterationCount; j++) {
-					long t1 = System.nanoTime();
-					try {
-						test.run();
-					}
-					catch (Exception e) {
-						errorCount.incrementAndGet();
-						e.printStackTrace();
-					}
-					long t2 = System.nanoTime();
-					execTimes.add(t2-t1);
-				}
-				
-				latch.countDown();
-			});
-		}
-		
-		try {
-//			latch.await(testTimeoutSeconds, TimeUnit.SECONDS);
-			latch.await();
-
-			long duration = System.currentTimeMillis() - start;
-			
-			long clientCpuTime = cpuTimeCalculator.stopAndGetTotalCpuTime();
-			long serverCpuTime = stopAndGetServerCpuTime();
-			
-			// merge all exec times form all threads
-			List<Long> allExecTimes = new ArrayList<>();			
-			for (int i=0; i<nThreads; i++)
-				allExecTimes.addAll(execTimesList.get(i));
-			
-			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, 
-					allExecTimes, serverCpuTime, clientCpuTime);
-			testResults.add(testResult);
-
-			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void startServerCpuTime() {
-		restTemplate.headForHeaders("/cpuTime/start");
-	}
-	private long stopAndGetServerCpuTime() {
-		return restTemplate.getForObject("/cpuTime/stopAndGet", Long.class);
+	@Override
+	protected CpuUsage stopAndGetServerCpuUsage() {
+		return restTemplate.getForObject("/cpuUsage/stopAndGet", CpuUsage.class);
 	}
 
 	private void testGetEmployeeByID() {
@@ -223,8 +172,7 @@ public class RestClient {
 		
 		List<CreateEmployeeResponse> listResponse = restTemplate.postForObject("/employees/bulk", empList, List.class);
 //		logger.info("created employee IDs: " + listResponse.size());
-	}
-	
+	}	
 	
 	private void warmUp() {
 //		int count = employeeClient.getEmployeeCount();
@@ -232,36 +180,4 @@ public class RestClient {
 		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
 	}
 	
-	private void saveTestResults() {
-		if (testResults.size() == 0)
-			return ;
-		
-		File outFile = new File(outputFileName);
-		boolean addCSVHeader = !outFile.exists() || !appendToOutputFile;
-		
-		try ( FileWriter fw = new FileWriter(outFile, appendToOutputFile);
-					BufferedWriter bw = new BufferedWriter(fw);
-					PrintWriter pw = new PrintWriter(bw);
-				) {
-			
-			if (addCSVHeader)
-				pw.println(TestResult.getCSVHeader());
-			
-			for (TestResult res : testResults)
-				pw.println(res.getResultAsCSV());
-			
-			logger.log(Level.INFO, "Test results saved in {0}", outFile.getAbsolutePath());
-			
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-	}
-	
-	private void shutdown() throws InterruptedException {
-		executor.shutdown();
-		executor.awaitTermination(30, TimeUnit.SECONDS);
-		
-		saveTestResults();
-	}	
-
 }

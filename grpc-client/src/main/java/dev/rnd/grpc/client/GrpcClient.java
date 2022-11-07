@@ -1,21 +1,11 @@
 package dev.rnd.grpc.client;
 
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,15 +15,16 @@ import dev.rnd.grpc.employee.CreateEmployeeResponse;
 import dev.rnd.grpc.employee.Employee;
 import dev.rnd.grpc.server.controller.EmployeeUtil;
 import dev.rnd.grpc.server.service.EmployeeDTO;
+import dev.rnd.grpc.system.CpuUsageProto;
 import dev.rnd.grpc.system.SystemGrpcServiceGrpc;
 import dev.rnd.grpc.system.SystemGrpcServiceGrpc.SystemGrpcServiceBlockingStub;
-import dev.rnd.util.CpuTimeCalculator;
-import dev.rnd.util.TestResult;
+import dev.rnd.util.CpuUsage;
+import dev.rnd.util.TestClient;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
 
-public class GrpcClient {
+public class GrpcClient extends TestClient {
 
   private static final Logger logger = Logger.getLogger(GrpcClient.class.getName());
   private static final String SAMPLE_DATA_SET = "sampleEmployeeData.csv";
@@ -42,15 +33,12 @@ public class GrpcClient {
   private ManagedChannel channel;
   private EmployeeGrpcClient employeeClient;
   private SystemGrpcServiceBlockingStub systemBlockingStub;
-  private ExecutorService executor;
   
   private Map<Integer, EmployeeDTO> sampleData = new HashMap<>();
   private List<EmployeeDTO> sampleDataAsList = new ArrayList<>();
   private List<Integer> employeeIDs;
   
   private Random rnd = new Random(System.currentTimeMillis());
-  private List<TestResult> testResults = new ArrayList<>();  
-  private CpuTimeCalculator cpuTimeClaculator;
 
   GrpcClient() {
   	props = ApplicationProperties.getAppProperties();
@@ -65,9 +53,6 @@ public class GrpcClient {
   	employeeClient = new EmployeeGrpcClient(channel);
   	systemBlockingStub = SystemGrpcServiceGrpc.newBlockingStub(channel);
   	
-  	executor = Executors.newFixedThreadPool(props.getThreadCount());
-  	
-  	cpuTimeClaculator = new CpuTimeCalculator(props.getCpuTimeInterval());
   }
 
 	public static void main(String[] args) throws Exception{
@@ -81,16 +66,42 @@ public class GrpcClient {
 		}
 	}
 
+	@Override
+	protected String getProperty(String key) {
+		return props.getProperty(key);
+	}
+
+	@Override
+	protected int getThreadCount() {
+		return props.getThreadCount();
+	}
+
+	@Override
+	protected int getCpuTimeSampleInterval() {
+		return props.getCpuTimeInterval();
+	}
+
+	@Override
+	protected String getOutputFilename() {
+		return props.getOutputFileName();
+	}
+
+	@Override
+	protected boolean isAppendToOutputFile() {
+		return props.isAppendToOutputFile();
+	}
+
 	private void runTests() {
+		preTestRun();
 		warmUp();
 		
 		// single object read/write
 		int[] iterations = new int[] {10000};
 		for (int count : iterations) {
-			testGrpcMethod("getEmployeeByID", props.getThreadCount(),	count, 
+			testRemoteMethod("getEmployeeByID", props.getThreadCount(),	count, 
 					() -> testGetEmployeeByID());
 
-			testGrpcMethod("createEmployee", props.getThreadCount(), count, 
+			testRemoteMethod("createEmployee", props.getThreadCount(), count, 
 					() -> testCreateEmployee());
 		}
 		
@@ -99,10 +110,10 @@ public class GrpcClient {
 		for (int count : iterations)
 			for (int batch : batchSizes) {
 		
-				testGrpcMethod("getEmployeesList-"+batch, props.getThreadCount(), count, 
+				testRemoteMethod("getEmployeesList-"+batch, props.getThreadCount(), count, 
 						() -> testGetEmployeesList(batch));
 				
-				testGrpcMethod("createEmployeesList-"+batch, props.getThreadCount(), count, 
+				testRemoteMethod("createEmployeesList-"+batch, props.getThreadCount(), count, 
 						() -> testCreateEmployeesList(batch));			
 			}
 		
@@ -111,86 +122,23 @@ public class GrpcClient {
 		int[] numRecords = {100, 1000};
 		for (int count : iterations) 
 			for (int numRec: numRecords) {
-				testGrpcMethod("getEmployeesStreaming-"+numRec, props.getThreadCount(),	count, 
+				testRemoteMethod("getEmployeesStreaming-"+numRec, props.getThreadCount(),	count, 
 						() -> testGetEmployeesStreaming(numRec));
 	
-				testGrpcMethod("createEmployeesStreaming-"+numRec, props.getThreadCount(), count, 
+				testRemoteMethod("createEmployeesStreaming-"+numRec, props.getThreadCount(), count, 
 						() -> testCreateEmployeesStreaming(numRec));
 			}
 	}
 	
-	private boolean isTestEnabled(String testName) {
-		String testKey = "test." + testName;
-		return props.getProperty(testKey) == null || Boolean.valueOf(props.getProperty(testKey));
+	@Override
+	protected void startServerCpuUsageMonitor() {
+		systemBlockingStub.startCpuUsageMonitor(Empty.newBuilder().build());
 	}
-	
-	private void testGrpcMethod(String testName, int nThreads, int iterationCount, Runnable test) {
-		if (!isTestEnabled(testName)) {
-			logger.log(Level.INFO, "Skipped test {0}", testName);
-			return;
-		}
-					
-		CountDownLatch latch = new CountDownLatch(nThreads);
-		List<List<Long>> execTimesList = new ArrayList<>();		
-		AtomicInteger errorCount = new AtomicInteger(0);
-
-		startServerCpuTime();		
-		cpuTimeClaculator.start();
-		
-		long start = System.currentTimeMillis();
-		
-		for (int i=0; i< nThreads; i++) {
-			List<Long> execTimes = new ArrayList<>();
-			execTimesList.add(execTimes);
-			
-			executor.execute(() -> {
-				for (int j=0; j < iterationCount; j++) {
-					long t1 = System.nanoTime();
-					try {
-						test.run();
-					}
-					catch (Exception e) {
-						errorCount.incrementAndGet();
-						e.printStackTrace();
-					}
-					long t2 = System.nanoTime();
-					execTimes.add(t2-t1);
-				}
-				
-				latch.countDown();
-			});
-		}
-		
-		try {
-//			latch.await(props.getTestTimeoutSeconds(), TimeUnit.SECONDS);
-			latch.await();
-
-			long duration = System.currentTimeMillis() - start;
-			
-			long clientCpuTime = cpuTimeClaculator.stopAndGetTotalCpuTime();
-			long serverCpuTime = stopAndGetServerCpuTime();
-			
-			// merge all exec times form all threads
-			List<Long> allExecTimes = new ArrayList<>();			
-			for (int i=0; i<nThreads; i++)
-				allExecTimes.addAll(execTimesList.get(i));
-
-			TestResult testResult = new TestResult(testName, nThreads, iterationCount, errorCount.get(), duration, 
-					allExecTimes, serverCpuTime, clientCpuTime);
-			testResults.add(testResult);
-
-			logger.log(Level.INFO, "Completed {0} - threads={1}, iterationCount={2}", new Object[] {testName, nThreads, iterationCount});
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	private void startServerCpuTime() {
-		systemBlockingStub.startCpuTimeMeasurement(Empty.newBuilder().build());
-	}
-	private long stopAndGetServerCpuTime() {
-		return systemBlockingStub.stopAndGetCpuTime(Empty.newBuilder().build()).getNum();
+	@Override
+	protected CpuUsage stopAndGetServerCpuUsage() {
+		CpuUsageProto serverCpuUsageProto = systemBlockingStub.stopAndGetCpuUsage(Empty.newBuilder().build());
+		return new CpuUsage(serverCpuUsageProto.getDuration(), serverCpuUsageProto.getTotalCpuTime(), 
+				serverCpuUsageProto.getUtilization());
 	}
 
 	private void testGetEmployeeByID() {
@@ -237,37 +185,10 @@ public class GrpcClient {
 		logger.log(Level.INFO, "employee count on server: {0}", new Object[] {employeeIDs.size()});
 	}
 	
-	private void saveTestResults() {
-		if (testResults.size() == 0)
-			return ;
-		
-		File outFile = new File(props.getOutputFileName());
-		boolean addCSVHeader = !outFile.exists() || !props.isAppendToOutputFile();
-		
-		try ( FileWriter fw = new FileWriter(outFile, props.isAppendToOutputFile());
-					BufferedWriter bw = new BufferedWriter(fw);
-					PrintWriter pw = new PrintWriter(bw);
-				) {
-			
-			if (addCSVHeader)
-				pw.println(TestResult.getCSVHeader());
-			
-			for (TestResult res : testResults)
-				pw.println(res.getResultAsCSV());
-			
-			logger.log(Level.INFO, "Test results saved in {0}", outFile.getAbsolutePath());
-			
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		}
-	}
-	
-	private void shutdown() throws InterruptedException {
-		executor.shutdown();
-		executor.awaitTermination(30, TimeUnit.SECONDS);
+	@Override
+	protected void shutdown() throws InterruptedException {
+		super.shutdown();
 		channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
-		
-		saveTestResults();
 	}	
 
 }

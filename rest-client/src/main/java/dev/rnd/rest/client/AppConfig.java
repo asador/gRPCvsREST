@@ -1,8 +1,6 @@
 package dev.rnd.rest.client;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -17,21 +15,9 @@ import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
-import dev.rnd.util.CpuTimeCalculator;
-
 @Configuration
 @PropertySource("classpath:application.properties")
 public class AppConfig {
-	
-	@Bean
-	ExecutorService executorService(@Value("${test.numberOfThreads}") int threadCount) {
-		return Executors.newFixedThreadPool(threadCount);
-	}
-	
-	@Bean
-	public CpuTimeCalculator cpuTimeCalculator(@Value("${cpuTimeSampleIntervalMillisec}") int interval) {
-		return new CpuTimeCalculator(interval);
-	}
 	
 	@Bean
 	RestClient restClient() {

@@ -9,6 +9,7 @@ import java.util.List;
 public class TestResult {
 
 	private DecimalFormat df = new DecimalFormat("#.##");
+	private DecimalFormat dfPercentage = new DecimalFormat("#.###");
 	
 	private LocalDateTime executionTime;
 	private String testName;
@@ -22,12 +23,12 @@ public class TestResult {
 	private long duration;
 	private long avgThroughputPerSec;
 	
-	private long serverCpuTime;
-	private long clientCpuTime;
+	private CpuUsage serverCpuUsage;
+	private CpuUsage clientCpuUsage;
 	
-	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage,duration,throughput,serverCpuTime,clientCpuTime";
+	private static final String CSV_HEADER = "dateTime,testName,threadCount,iterationCount,avgExecTime,p95ExecTime,p98ExecTime,maxExecTime,errorPercentage,duration,throughput,serverCpuTime,serverCpu%,clientCpuTime,clientCpu%";
 	
-	public TestResult(String testName, int threadCount, int iterationCount, int errors, long duration, List<Long> execTimes, long serverCpuTime, long clientCpuTime) {
+	public TestResult(String testName, int threadCount, int iterationCount, int errors, long duration, List<Long> execTimes, CpuUsage serverCpuUsage, CpuUsage clientCpuUsage) {
 		executionTime = LocalDateTime.now();
 		this.testName = testName;
 		this.threadCount = threadCount;
@@ -36,8 +37,8 @@ public class TestResult {
 		this.duration = duration;
 		avgThroughputPerSec = execTimes.size() * 1000 / duration;
 		
-		this.serverCpuTime = serverCpuTime;
-		this.clientCpuTime = clientCpuTime;
+		this.serverCpuUsage = serverCpuUsage;
+		this.clientCpuUsage = clientCpuUsage;
 		
 		calcStats(execTimes);
 	}
@@ -113,9 +114,13 @@ public class TestResult {
 		csv.append(avgThroughputPerSec);
 		csv.append(',');
 
-		csv.append(serverCpuTime);
+		csv.append(serverCpuUsage.getTotalCpuTimeMillis());
 		csv.append(',');
-		csv.append(clientCpuTime);
+		csv.append(dfPercentage.format(serverCpuUsage.getCpuUtilizationPercentage()));
+		csv.append(',');
+		csv.append(clientCpuUsage.getTotalCpuTimeMillis());
+		csv.append(',');
+		csv.append(dfPercentage.format(clientCpuUsage.getCpuUtilizationPercentage()));
 
 		return csv.toString();
 	}

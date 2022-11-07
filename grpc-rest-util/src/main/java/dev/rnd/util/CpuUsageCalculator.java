@@ -5,7 +5,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CpuTimeCalculator {
+public class CpuUsageCalculator {
 
 	private class Times {
 		public long id;
@@ -18,15 +18,22 @@ public class CpuTimeCalculator {
 	private Map<Long, Times> history = new HashMap<>();
 	private long interval;
 	private Thread timerThread;
+	private long startTime;
+	
+	private int numProcessors;
 
-	public CpuTimeCalculator(long interval) {
+	public CpuUsageCalculator(long interval) {
 		this.interval = interval;
+		numProcessors = Runtime.getRuntime().availableProcessors();
+		
+//		System.out.println("Number of Cores: " + numProcessors);
 	}
 
 	public void start() {
 		if (timerThread != null && timerThread.getState() != Thread.State.TERMINATED)
 			return;
 
+		startTime = System.currentTimeMillis();
 		history.clear();
 
 		timerThread = new Thread(() -> {
@@ -51,9 +58,14 @@ public class CpuTimeCalculator {
 			;
 	}
 
-	public long stopAndGetTotalCpuTime() {
+	public CpuUsage stopAndGetCpuUsage() {
 		stop();
-		return getTotalCpuTime();
+		
+		long duration = System.currentTimeMillis() - startTime;
+		long totalCpuTime = getTotalCpuTime();
+		double cpuUtilization = (double)totalCpuTime / (duration * numProcessors);
+		
+		return new CpuUsage(duration, totalCpuTime, cpuUtilization);
 	}
 
 	/** Update the hash table of thread times. */
@@ -84,9 +96,9 @@ public class CpuTimeCalculator {
 			}
 		}
 	}
-
+	
 	/** Get total CPU time so far in milliseconds */
-	public long getTotalCpuTime() {
+	private long getTotalCpuTime() {
 		long cpuTimeMillis = 0L;
 		for (Times times : history.values())
 			cpuTimeMillis += times.endCpuTime - times.startCpuTime;
