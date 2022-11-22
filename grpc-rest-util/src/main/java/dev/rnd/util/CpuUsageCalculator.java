@@ -19,14 +19,12 @@ public class CpuUsageCalculator {
 	private long interval;
 	private Thread timerThread;
 	private long startTime;
-	
+
 	private int numProcessors;
 
 	public CpuUsageCalculator(long interval) {
 		this.interval = interval;
 		numProcessors = Runtime.getRuntime().availableProcessors();
-		
-//		System.out.println("Number of Cores: " + numProcessors);
 	}
 
 	public void start() {
@@ -60,11 +58,11 @@ public class CpuUsageCalculator {
 
 	public CpuUsage stopAndGetCpuUsage() {
 		stop();
-		
+
 		long duration = System.currentTimeMillis() - startTime;
 		long totalCpuTime = getTotalCpuTime();
-		double cpuUtilization = (double)totalCpuTime / (duration * numProcessors);
-		
+		double cpuUtilization = (double) totalCpuTime / (duration * numProcessors);
+
 		return new CpuUsage(duration, totalCpuTime, cpuUtilization);
 	}
 
@@ -96,7 +94,7 @@ public class CpuUsageCalculator {
 			}
 		}
 	}
-	
+
 	/** Get total CPU time so far in milliseconds */
 	private long getTotalCpuTime() {
 		long cpuTimeMillis = 0L;

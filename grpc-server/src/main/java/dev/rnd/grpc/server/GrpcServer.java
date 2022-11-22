@@ -1,5 +1,6 @@
 package dev.rnd.grpc.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -37,11 +38,17 @@ public class GrpcServer
   	
     BindableService employeeGrpcService = new EmployeeGrpcController(empService);
 
-    server = serverBuilder
+    serverBuilder
     		.addService(employeeGrpcService)
     		.addService(new SystemGrpcController(Integer.valueOf(config.getProperty("cpuTimeSampleIntervalMillisec"))))
-    		.addService(ProtoReflectionService.newInstance()) // for service method discovery by client test tools
-        .build();
+    		.addService(ProtoReflectionService.newInstance()); // for service method discovery by client test tools
+    		
+    if (Boolean.valueOf(config.getProperty("tls.enabled"))) {
+    	String certFilesPath = config.getProperty("tls.certFilesPath");
+    	serverBuilder.useTransportSecurity(new File(certFilesPath+"/server-cert.pem"), new File(certFilesPath+"/server-key.pem"));
+    }
+    
+    server = serverBuilder.build();
   }
   
   private void loadConfigProperties() {

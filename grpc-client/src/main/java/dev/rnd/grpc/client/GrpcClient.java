@@ -1,5 +1,7 @@
 package dev.rnd.grpc.client;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,9 +22,11 @@ import dev.rnd.grpc.system.SystemGrpcServiceGrpc;
 import dev.rnd.grpc.system.SystemGrpcServiceGrpc.SystemGrpcServiceBlockingStub;
 import dev.rnd.util.CpuUsage;
 import dev.rnd.util.TestClient;
+import io.grpc.ChannelCredentials;
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
+import io.grpc.TlsChannelCredentials;
 
 public class GrpcClient extends TestClient {
 
@@ -48,8 +52,18 @@ public class GrpcClient extends TestClient {
   	
   	EmployeeUtil.loadDataSet(SAMPLE_DATA_SET, sampleData);
   	sampleDataAsList.addAll(sampleData.values());
+
+  	ChannelCredentials channelCreds = InsecureChannelCredentials.create();
   	
-  	channel = Grpc.newChannelBuilder(props.getServerAddress(), InsecureChannelCredentials.create()).build();
+  	try {
+			if (props.isTlsEnabled())
+				channelCreds = TlsChannelCredentials.newBuilder().trustManager(new File(props.getCertFilesPath() + "/ca-cert.pem")).build();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+  	
+  	channel = Grpc.newChannelBuilder(props.getServerAddress(), channelCreds).build();
   	employeeClient = new EmployeeGrpcClient(channel);
   	systemBlockingStub = SystemGrpcServiceGrpc.newBlockingStub(channel);
   	

@@ -13,6 +13,8 @@ public class ApplicationProperties {
 	private static final String TEST_TIMEOUT = "test.timoutSeconds";
   private static final String OUTPUT_FILE_NAME = "test.outputFile";
   private static final String APPEND_TO_OUTPUT_FILE = "test.appendToOutputFile";
+  private static final String TLS_ENABLED = "tls.enabled";
+  private static final String TLS_CERT_FILES_PATH = "tls.certFilesPath";
   
 	private Properties config;
   
@@ -24,6 +26,9 @@ public class ApplicationProperties {
 //  private int testTimeoutSeconds;
 	private String outputFileName;
 	private boolean appendToOutputFile;
+	
+	private boolean tlsEnabled;
+	private String certFilesPath;
 	
 	private static ApplicationProperties _theInstance = null;
   
@@ -51,6 +56,9 @@ public class ApplicationProperties {
 //			testTimeoutSeconds = Integer.valueOf(config.getProperty(TEST_TIMEOUT));
 			outputFileName = config.getProperty(OUTPUT_FILE_NAME);
 			appendToOutputFile = Boolean.valueOf(config.getProperty(APPEND_TO_OUTPUT_FILE));
+			
+			tlsEnabled = Boolean.valueOf(config.getProperty(TLS_ENABLED));
+			certFilesPath = config.getProperty(TLS_CERT_FILES_PATH);
 		}
 		catch (IOException e) {
 			e.printStackTrace();
@@ -84,4 +92,13 @@ public class ApplicationProperties {
 	public String getProperty(String key) {
 		return config.getProperty(key);
 	}
+
+	public boolean isTlsEnabled() {
+		return tlsEnabled;
+	}
+
+	public String getCertFilesPath() {
+		return certFilesPath;
+	}
+	
 }
