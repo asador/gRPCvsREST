@@ -20,6 +20,12 @@ The following command starts the server on port 8980.
 java -jar grpc-server-0.0.1-SNAPSHOT.jar
 ```
 
+**Run with TLS:**
+Add the following `-D` option to start the server on port 8980 with TLS. This requires to have server private key and certificate be present in the same folder.
+```
+-Dtls.enabled=true
+```
+
 ## grpc-client ##
 
 This is a test client that calls the gRPC server. When the test is finished, it stores the resutls in a local *csv* file. Configuration parameters should be passed with `-D` system property to overwrite the defaults.
@@ -32,6 +38,12 @@ mvn clean install spring-boot:repackage
 **Run:**
 ```
 java -Dgrpc.server.address=<host:8980> -Dtest.numberOfThreads=<default is 1> -Dtest.outputFile=<output file name> -jar grpc-client-0.0.1-SNAPSHOT.jar
+```
+
+**Run with TLS:**
+Add following `-D` option to connect with TLS. This requires to have CA certificate be present in the same folder.
+```
+-Dtls.enabled=true
 ```
 
 ## rest-server ##
@@ -47,6 +59,12 @@ The following command starts the server on port 8080.
 java -jar rest-server-0.0.1-SNAPSHOT.jar
 ```
 
+**Run with TLS:**
+Add the following `-D` command starts the server on port 8443 with TLS. This requires to have server private key and certificate be present in the same folder.
+```
+-Dspring.profiles.active=tls
+```
+
 ## rest-client ##
 
 This is a test client that calls the REST server. When the test is finished, it stores the resutls in a local *csv* file. Configuration parameters should be passed with `-D` system property to overwrite the defaults.
@@ -59,4 +77,22 @@ mvn clean install spring-boot:repackage
 **Run:**
 ```
 java -Drest.server.address=http://<host:8080> -Dtest.numberOfThreads=<default is 1> -Dtest.outputFile=<output file name> -jar rest-client-0.0.1-SNAPSHOT.jar
+```
+**Run with TLS:**
+Change the server address to https on port 8443. Add the following `-D` option to enable TLS. This requires to have trust-store file be present in the same folder.
+```
+-Dspring.profiles.active=tls
+```
+## Generating Self-Signed Certificates ##
+
+**Build certificates**
+The following command generates a self-signed CA certificate (ca-cert.pem), a server certificate (server-cert.pem) and its private key (server-key.pem).
+```
+gen-cert.sh
+```
+
+**Build trust store**
+This is to create a trust store containg the self-signed root certificate that was generated in the previous step. This file is required by the rest-client.
+```
+keytool -import -alias "myCAcert" -file ca-cert.pem -keystore truststore.p12
 ```

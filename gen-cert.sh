@@ -1,5 +1,5 @@
 # 1. Generate CA's private key and self-signed certificate
-openssl req -x509 -newkey rsa:4096 -days 1000 -nodes -keyout ca-key.pem -out ca-cert.pem -subj "/C=CA/ST=Ontario/L=Toronto/O=RnD/OU=Education/CN=*.myrndorg.net/emailAddress=fake-ca-email@nowhere.com"
+openssl req -x509 -newkey rsa:4096 -days 1000 -nodes -keyout ca-key.pem -out ca-cert.pem -subj "/C=CA/ST=Ontario/L=Toronto/O=RnD/OU=Education/CN=CA-rndorg.net/emailAddress=fake-ca-email@nowhere.com"
 
 echo "CA's self-signed certificate"
 openssl x509 -in ca-cert.pem -noout -text
