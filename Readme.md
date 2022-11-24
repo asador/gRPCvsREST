@@ -60,7 +60,7 @@ java -jar rest-server-0.0.1-SNAPSHOT.jar
 ```
 
 **Run with TLS:**
-Add the following `-D` command starts the server on port 8443 with TLS. This requires to have server private key and certificate be present in the same folder.
+Add the following `-D` command to start the server on port 8443 with TLS. This requires to have server private key and certificate be present in the same folder.
 ```
 -Dspring.profiles.active=tls
 ```
