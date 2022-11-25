@@ -96,3 +96,7 @@ This is to create a trust store containg the self-signed root certificate that w
 ```
 keytool -import -alias "myCAcert" -file ca-cert.pem -keystore truststore.p12
 ```
+
+## Test Results and Observations Article ##
+
+[A Study to compare gRPC and REST and when each one performs better](https://www.linkedin.com/pulse/grpc-rest-which-one-performs-better-reza-asadollahi) 
