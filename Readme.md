@@ -101,3 +101,6 @@ keytool -import -alias "myCAcert" -file ca-cert.pem -keystore truststore.p12
 Test results are available in the `testResults` folder.
 
 1. [A Study to compare gRPC and REST and when each one performs better](https://www.linkedin.com/pulse/grpc-rest-which-one-performs-better-reza-asadollahi) 
+2. [gRPC vs REST performancce comparision over TLS] 
+(https://www.linkedin.com/pulse/performance-comparison-grpc-rest-over-tls-reza-asadollahi/)
+
